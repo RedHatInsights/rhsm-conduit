@@ -52,8 +52,6 @@ public class ApplicationConfiguration {
         return new ServletContextInitializer() {
             @Override
             public void onStartup(ServletContext servletContext) throws ServletException {
-                servletContext.setInitParameter("resteasy.async.job.service.enabled", "true");
-                servletContext.setInitParameter("resteasy.async.job.service.base.path", "/jobs");
             }
         };
     }

@@ -14,9 +14,7 @@
  */
 package org.candlepin.insights.pinhead.client;
 
-import org.jboss.logging.Logger;
-import org.jboss.resteasy.client.jaxrs.internal.ClientConfiguration;
-import org.jboss.resteasy.spi.ResteasyProviderFactory;
+import org.glassfish.jersey.client.ClientConfig;
 import org.springframework.beans.factory.FactoryBean;
 
 import java.io.IOException;
@@ -56,11 +54,7 @@ public class X509ApiClientFactory implements FactoryBean<ApiClient>  {
 
     private Client buildHttpClient(X509ApiClientFactoryConfiguration x509Config, ApiClient client)
         throws GeneralSecurityException {
-        ClientConfiguration clientConfig = new ClientConfiguration(ResteasyProviderFactory.getInstance());
-        clientConfig.register(client.getJSON());
-        if (client.isDebugging()) {
-            clientConfig.register(Logger.class);
-        }
+        ClientConfig clientConfig = new ClientConfig();
 
         ClientBuilder builder = ClientBuilder.newBuilder().withConfig(clientConfig);
         builder.hostnameVerifier(x509Config.getHostnameVerifier());

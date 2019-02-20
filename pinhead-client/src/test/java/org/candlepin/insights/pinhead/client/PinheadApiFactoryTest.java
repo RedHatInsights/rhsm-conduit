@@ -70,7 +70,9 @@ public class PinheadApiFactoryTest {
     @Test
     public void testNoAuthClientConfiguration() throws Exception {
         PinheadApiFactory factory = new PinheadApiFactory(config);
-        assertEquals(null, factory.getObject().getApiClient().getHttpClient().getSslContext());
+        // TLS is current default for jersey, we specify TLS1.2 explicitly
+        assertEquals("TLS",
+            factory.getObject().getApiClient().getHttpClient().getSslContext().getProtocol());
     }
 
     @Test
@@ -122,7 +124,7 @@ public class PinheadApiFactoryTest {
             "text/plain",
             new String[] {},
             new GenericType<String>() {}
-        );
+        ).getData();
     }
 
     private WireMockConfiguration buildWireMockConfig() {

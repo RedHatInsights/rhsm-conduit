@@ -24,7 +24,7 @@ import javax.ws.rs.ext.Provider;
 
 /**
  * An exception mapper used to override the default exception mapping done by
- * resteasy. This implementation generates and returns an Errors object as the
+ * Jersey. This implementation generates and returns an Errors object as the
  * response Json instead of redirecting to an error page.
  */
 @Component

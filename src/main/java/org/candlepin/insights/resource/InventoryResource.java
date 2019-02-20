@@ -37,12 +37,12 @@ public class InventoryResource implements InventoryApi {
     private InventoryController inventoryController;
 
     @Override
-    public OrgInventory getInventoryForOrg(@NotNull byte[] xRhIdentity, String orgId) {
+    public OrgInventory getInventoryForOrg(@NotNull String xRhIdentity, String orgId) {
         return new OrgInventory();
     }
 
     @Override
-    public void updateInventoryForOrg(@NotNull byte[] xRhIdentity, String orgId) {
+    public void updateInventoryForOrg(@NotNull String xRhIdentity, String orgId) {
         inventoryController.updateInventoryForOrg(orgId);
     }
 }

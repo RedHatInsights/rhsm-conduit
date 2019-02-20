@@ -17,9 +17,10 @@ package org.candlepin.insights.filter;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-import org.jboss.resteasy.util.MediaTypeHelper;
+import org.glassfish.jersey.message.internal.MediaTypes;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,7 +37,7 @@ public class ContentNegotiationRequestFilterTest {
 
     @Test
     public void acceptHeaderMustContainVendorSpecificJsonHeaderWithNoParameters() throws Exception {
-        List<MediaType> types = MediaTypeHelper.parseHeader("application/vnd.api+json");
+        List<MediaType> types = MediaTypes.createFrom(new String[] { "application/vnd.api+json" });
         assertEquals(1, types.size());
 
         MultivaluedMap<String, String> headers = new MultivaluedHashMap<>();
@@ -53,7 +54,8 @@ public class ContentNegotiationRequestFilterTest {
 
     @Test
     public void notAcceptableThrownWhenAcceptHeaderContainsJsonMediaTypeWithParams() {
-        List<MediaType> types = MediaTypeHelper.parseHeader("application/vnd.api+json;version=1.0");
+        List<MediaType> types =
+            MediaTypes.createFrom(new String[] { "application/vnd.api+json;version=1.0" });
         assertEquals(1, types.size());
 
         MultivaluedMap<String, String> headers = new MultivaluedHashMap<>();
@@ -72,8 +74,8 @@ public class ContentNegotiationRequestFilterTest {
 
     @Test
     public void notAcceptableNotThrownWhenAcceptHeaderOneValidJsonMediaTypeWithoutParams() throws Exception {
-        List<MediaType> types = MediaTypeHelper.parseHeader(
-            "application/vnd.api+json;version=1.0,application/vnd.api+json,application/vnd.api+json;v=2");
+        List<MediaType> types = MediaTypes.createFrom(new String[] {"application/vnd.api+json;version=1.0",
+            "application/vnd.api+json", "application/vnd.api+json;v=2" });
         assertEquals(3, types.size());
 
         MultivaluedMap<String, String> headers = new MultivaluedHashMap<>();
@@ -90,7 +92,8 @@ public class ContentNegotiationRequestFilterTest {
 
     @Test
     public void contentTypeHeaderCanNotSpecifyAnyMediaTypeParameters() {
-        List<MediaType> types = MediaTypeHelper.parseHeader("application/vnd.api+json;version=1.0");
+        List<MediaType> types =
+            MediaTypes.createFrom(new String[] { "application/vnd.api+json;version=1.0" });
         assertEquals(1, types.size());
 
         MultivaluedMap<String, String> headers = new MultivaluedHashMap<>();
@@ -109,7 +112,7 @@ public class ContentNegotiationRequestFilterTest {
 
     @Test
     public void nonMatchingContentTypesCanHaveParamteters() throws Exception {
-        List<MediaType> types = MediaTypeHelper.parseHeader("application/foobar;version=1.0");
+        List<MediaType> types = MediaTypes.createFrom(new String[] { "application/foobar;version=1.0" });
         assertEquals(1, types.size());
         assertEquals(1, types.get(0).getParameters().size());
 

@@ -14,21 +14,23 @@
  */
 package org.candlepin.insights;
 
+import org.candlepin.insights.api.resources.InventoryApi;
+import org.candlepin.insights.api.resources.StatusApi;
+
+import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.glassfish.jersey.server.ResourceConfig;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.ws.rs.core.Application;
-
-/** Bootstrapper for Jersey. */
+/**
+ * Holds Jersey configuration for rhsm-conduit.
+ */
 @Component
-public class JaxrsApplication extends Application {
-
-    @Override
-    public Set<Class<?>> getClasses() {
-        return new HashSet<>(Arrays.asList(MultiPartFeature.class));
+public class JerseyConfig extends ResourceConfig {
+    public JerseyConfig() {
+        register(JacksonFeature.class);
+        register(MultiPartFeature.class);
+        register(InventoryApi.class);
+        register(StatusApi.class);
     }
 }

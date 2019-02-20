@@ -31,7 +31,7 @@ public enum ErrorCode {
     UNHANDLED_EXCEPTION_ERROR(1000, "An unhandled exception occurred"),
 
     /**
-     * An exception was thrown by RestEasy while processing a request to the
+     * An exception was thrown by Jersey while processing a request to the
      * rhsm-conduit API. This typically means that an HTTP client error has
      * occurred (HTTP 4XX).
      */
