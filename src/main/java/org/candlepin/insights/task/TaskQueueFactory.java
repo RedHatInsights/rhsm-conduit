@@ -14,21 +14,23 @@
  */
 package org.candlepin.insights.task;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.candlepin.insights.task.kafka.KafkaTaskProcessor;
 import org.candlepin.insights.task.kafka.KafkaTaskQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.FactoryBean;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class TaskQueueFactory implements FactoryBean<TaskQueue> {
 
     private static Logger log = LoggerFactory.getLogger(TaskQueueFactory.class);
 
+    @Autowired
     private TaskWorker worker;
 
-    public TaskQueueFactory(TaskWorker worker) {
-        this.worker = worker;
-    }
+    @Autowired
+    private ObjectMapper mapper;
 
     @Override
     public TaskQueue getObject() throws Exception {
@@ -36,13 +38,13 @@ public class TaskQueueFactory implements FactoryBean<TaskQueue> {
         // TODO Add the In-Memory queue implementation here.
         log.info("Using a KafkaTaskQueue...");
 
-        KafkaTaskProcessor processor = new KafkaTaskProcessor(TaskQueue.TASK_GROUP);
+        KafkaTaskProcessor processor = new KafkaTaskProcessor(TaskQueue.TASK_GROUP, mapper);
         // Set the worker as the task listener so that the worker will be notified
         // that there's work to do when a message is received from Kafka.
         processor.addTaskListener(worker);
 
         // Create the queue and register any processors.
-        KafkaTaskQueue queue = new KafkaTaskQueue();
+        KafkaTaskQueue queue = new KafkaTaskQueue(mapper);
         queue.registerProcessors(processor);
         return queue;
     }

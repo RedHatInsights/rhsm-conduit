@@ -14,8 +14,10 @@
  */
 package org.candlepin.insights.task.kafka;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.candlepin.insights.task.TaskDescriptor;
 import org.candlepin.insights.task.TaskQueue;
 import org.slf4j.Logger;
@@ -29,10 +31,10 @@ public class KafkaTaskQueue implements TaskQueue<KafkaTaskProcessor> {
 
     private static Logger log = LoggerFactory.getLogger(KafkaTaskQueue.class);
 
-    private KafkaProducer<String, String> producer;
+    private KafkaProducer<String, TaskDescriptor> producer;
     private List<KafkaTaskProcessor> processors;
 
-    public KafkaTaskQueue() {
+    public KafkaTaskQueue(ObjectMapper mapper) {
         this.processors = new ArrayList<>();
 
         // TODO Properly load the config properties.
@@ -45,15 +47,15 @@ public class KafkaTaskQueue implements TaskQueue<KafkaTaskProcessor> {
         producerProperties.put("linger.ms", 1);
         producerProperties.put("buffer.memory", 33554432);
         producerProperties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        producerProperties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        producer = new KafkaProducer<>(producerProperties);
+//        producerProperties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        producer = new KafkaProducer<>(producerProperties, new StringSerializer(), new KafkaJsonSerializer<>(mapper));
     }
 
     @Override
     public void enqueue(TaskDescriptor taskDescriptor) {
         // TODO Need to create a custom serializer for sending a taskDescriptor, and a deserializer for receiving a taskDescriptor.
         log.debug("Sending taskDescriptor to kafka...");
-        producer.send(new ProducerRecord<>(taskDescriptor.getGroupId(), "rhsm-conduit-taskDescriptor", taskDescriptor.getArg("org_id")));
+        producer.send(new ProducerRecord<>(taskDescriptor.getGroupId(), "rhsm-conduit-taskDescriptor", taskDescriptor));
     }
 
     @Override
