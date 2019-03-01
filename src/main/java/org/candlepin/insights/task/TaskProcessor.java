@@ -18,4 +18,6 @@ public interface TaskProcessor {
 
     void start();
 
+    void stop();
+
 }

@@ -14,7 +14,9 @@
  */
 package org.candlepin.insights.task;
 
-public interface TaskQueue {
+import org.springframework.beans.factory.DisposableBean;
+
+public interface TaskQueue extends DisposableBean {
 
     public static final String TASK_GROUP = "rhsm-conduit-tasks";
 
