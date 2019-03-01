@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Red Hat, Inc.
+ * Copyright (c) 2006 - 2019 Red Hat, Inc.
  *
  * This software is licensed to you under the GNU General Public License,
  * version 2 (GPLv2). There is NO WARRANTY for this software, express or
@@ -14,16 +14,16 @@
  */
 package org.candlepin.insights.task;
 
-public class UpdateOrgInventoryTask extends Task {
+public class UpdateOrgInventoryTask implements Task {
 
-    public UpdateOrgInventoryTask(String groupId, String orgId) {
-        super(groupId);
-        this.setValue("org_id", orgId);
+    private String orgId;
+
+    public UpdateOrgInventoryTask(String orgId) {
+        this.orgId = orgId;
     }
 
     @Override
-    public TaskType getType() {
-        return TaskType.UPDATE_ORG_INVENTORY;
+    public void execute() {
+        // Updating org.
     }
-
 }

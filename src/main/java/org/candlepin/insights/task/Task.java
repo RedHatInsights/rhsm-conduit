@@ -14,53 +14,8 @@
  */
 package org.candlepin.insights.task;
 
-import java.util.HashMap;
-import java.util.Map;
+public interface Task {
 
-public abstract class Task {
+    public void execute();
 
-    private String groupId;
-    private TaskType taskType;
-    private Map<String, String> values;
-
-    public Task(String groupId) {
-        this.groupId = groupId;
-        this.values = new HashMap<>();
-        this.taskType = getType();
-    }
-
-    abstract TaskType getType();
-
-    public String getGroupId() {
-        return groupId;
-    }
-
-    public void setGroupId(String groupId) {
-        this.groupId = groupId;
-    }
-
-    public Map<String, String> getValues() {
-        return values;
-    }
-
-    public void setExtraValues(Map<String, String> extraValues) {
-        this.values = extraValues;
-    }
-
-    //
-    // Convenience builder methods.
-    //
-    public Task groupId(String groupId) {
-        setGroupId(groupId);
-        return this;
-    }
-
-    public String getValue(String key) {
-        return values.get(key);
-    }
-
-    public Task setValue(String key, String value) {
-        values.put(key, value);
-        return this;
-    }
 }

@@ -14,10 +14,27 @@
  */
 package org.candlepin.insights.task;
 
-public interface TaskProcessor {
+import java.util.LinkedList;
+import java.util.List;
 
-    void start();
+public abstract class TaskProcessor {
 
-    void stop();
+    private List<TaskListener> taskListeners;
+
+    public TaskProcessor() {
+        taskListeners = new LinkedList<>();
+    }
+
+    public void addTaskListener(TaskListener listener) {
+        this.taskListeners.add(listener);
+    }
+
+    protected void notifyTaskReceived(TaskDescriptor taskDescriptor) {
+        this.taskListeners.forEach(listener -> listener.onTaskReceived(taskDescriptor));
+    }
+
+    public abstract void start();
+
+    public abstract void stop();
 
 }

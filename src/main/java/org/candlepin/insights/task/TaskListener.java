@@ -14,17 +14,8 @@
  */
 package org.candlepin.insights.task;
 
-import org.springframework.beans.factory.annotation.Autowired;
+public interface TaskListener {
 
-public class TaskManager {
-
-    @Autowired TaskQueue queue;
-
-    public void updateOrgInventory(String orgId) {
-        queue.enqueue(
-            new TaskDescriptor(TaskQueue.TASK_GROUP, TaskType.UPDATE_ORG_INVENTORY)
-                .setArg("org_id", orgId)
-        );
-    }
+    public void onTaskReceived(TaskDescriptor taskDescriptor);
 
 }

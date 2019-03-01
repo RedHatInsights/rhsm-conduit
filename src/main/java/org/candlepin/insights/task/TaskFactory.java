@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2019 Red Hat, Inc.
+ * Copyright (c) 2019 Red Hat, Inc.
  *
  * This software is licensed to you under the GNU General Public License,
  * version 2 (GPLv2). There is NO WARRANTY for this software, express or
@@ -14,17 +14,12 @@
  */
 package org.candlepin.insights.task;
 
-import org.springframework.beans.factory.annotation.Autowired;
+public class TaskFactory {
 
-public class TaskManager {
-
-    @Autowired TaskQueue queue;
-
-    public void updateOrgInventory(String orgId) {
-        queue.enqueue(
-            new TaskDescriptor(TaskQueue.TASK_GROUP, TaskType.UPDATE_ORG_INVENTORY)
-                .setArg("org_id", orgId)
-        );
+    public Task build(TaskDescriptor taskDescriptor) {
+        if (taskDescriptor.getTaskType() == TaskType.UPDATE_ORG_INVENTORY) {
+            return new UpdateOrgInventoryTask(taskDescriptor.getArg("ord_id"));
+        }
+        throw new RuntimeException("Could not build task. Unknown task type: " + taskDescriptor.getTaskType());
     }
-
 }

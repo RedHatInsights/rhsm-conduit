@@ -14,17 +14,20 @@
  */
 package org.candlepin.insights.task;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-public class TaskManager {
+@Component
+public class TaskWorker implements TaskListener {
 
-    @Autowired TaskQueue queue;
+    private TaskFactory taskFactory;
 
-    public void updateOrgInventory(String orgId) {
-        queue.enqueue(
-            new TaskDescriptor(TaskQueue.TASK_GROUP, TaskType.UPDATE_ORG_INVENTORY)
-                .setArg("org_id", orgId)
-        );
+    public TaskWorker() {
+        this.taskFactory = new TaskFactory();
     }
 
+    @Override
+    public void onTaskReceived(TaskDescriptor taskDescriptor) {
+        Task toExecute = taskFactory.build(taskDescriptor);
+        toExecute.execute();
+    }
 }

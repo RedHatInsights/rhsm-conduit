@@ -16,11 +16,11 @@ package org.candlepin.insights.task;
 
 import org.springframework.beans.factory.DisposableBean;
 
-public interface TaskQueue extends DisposableBean {
+public interface TaskQueue<P extends TaskProcessor> extends DisposableBean {
 
     public static final String TASK_GROUP = "rhsm-conduit-tasks";
 
-    void enqueue(Task task);
+    void enqueue(TaskDescriptor taskDescriptor);
 
-    void registerProcessors(String ... taskGroups);
+    void registerProcessors(P ... processors);
 }

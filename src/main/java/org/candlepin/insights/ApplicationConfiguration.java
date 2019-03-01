@@ -22,6 +22,7 @@ import org.candlepin.insights.pinhead.client.PinheadApiFactory;
 
 import org.candlepin.insights.task.TaskManager;
 import org.candlepin.insights.task.TaskQueueFactory;
+import org.candlepin.insights.task.TaskWorker;
 import org.jboss.resteasy.springboot.ResteasyAutoConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,8 +129,13 @@ public class ApplicationConfiguration {
     }
 
     @Bean
-    public TaskQueueFactory taskQueueFactory() {
-        return new TaskQueueFactory();
+    public TaskWorker taskWorker() {
+        return new TaskWorker();
+    }
+
+    @Bean
+    public TaskQueueFactory taskQueueFactory(TaskWorker taskWorker) {
+        return new TaskQueueFactory(taskWorker);
     }
 
     @Bean
