@@ -18,6 +18,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.candlepin.insights.task.TaskProcessor;
 import org.candlepin.insights.task.TaskQueue;
+import org.candlepin.insights.task.TaskWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +26,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Properties;
 
-public class KafkaTaskProcessor implements TaskProcessor {
+public class KafkaTaskProcessor extends TaskProcessor {
 
     private static Logger log = LoggerFactory.getLogger(KafkaTaskProcessor.class);
 
@@ -33,6 +34,7 @@ public class KafkaTaskProcessor implements TaskProcessor {
     private Thread reader;
 
     public KafkaTaskProcessor(String taskGroup) {
+
         Properties consumerProperties = new Properties();
         consumerProperties.put("bootstrap.servers", "localhost:9092");
         consumerProperties.put("group.id", "rhsm-task-processor");
@@ -56,7 +58,10 @@ public class KafkaTaskProcessor implements TaskProcessor {
                         }
                         records.forEach(record -> log.info("Message Received: {}:{}", record.key(), record.value()));
                         // Sleep to simulate message processing
+//                        notifyTaskReceived(task);
                         Thread.sleep(4000);
+
+
                         // The task is complete, let Kafka know.
                         consumer.commitSync();
                     }

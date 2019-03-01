@@ -16,7 +16,7 @@ package org.candlepin.insights.task.kafka;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.candlepin.insights.task.Task;
+import org.candlepin.insights.task.TaskDescriptor;
 import org.candlepin.insights.task.TaskQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-public class KafkaTaskQueue implements TaskQueue {
+public class KafkaTaskQueue implements TaskQueue<KafkaTaskProcessor> {
 
     private static Logger log = LoggerFactory.getLogger(KafkaTaskQueue.class);
 
@@ -50,19 +50,17 @@ public class KafkaTaskQueue implements TaskQueue {
     }
 
     @Override
-    public void enqueue(Task task) {
-        // TODO Need to create a custom serializer for sending a task, and a deserializer for receiving a task.
-        log.debug("Sending task to kafka...");
-        producer.send(new ProducerRecord<>(task.getGroupId(), "rhsm-conduit-task", task.getValue("org_id")));
+    public void enqueue(TaskDescriptor taskDescriptor) {
+        // TODO Need to create a custom serializer for sending a taskDescriptor, and a deserializer for receiving a taskDescriptor.
+        log.debug("Sending taskDescriptor to kafka...");
+        producer.send(new ProducerRecord<>(taskDescriptor.getGroupId(), "rhsm-conduit-taskDescriptor", taskDescriptor.getArg("org_id")));
     }
 
     @Override
-    public void registerProcessors(String... taskGroups) {
-        for (String group : taskGroups) {
-            log.info("Registering Kafka task processor for task group: {}", group);
-            KafkaTaskProcessor processor = new KafkaTaskProcessor(group);
-            processors.add(processor);
-            processor.start();
+    public void registerProcessors(KafkaTaskProcessor ... processors) {
+        for (KafkaTaskProcessor p : processors) {
+            this.processors.add(p);
+            p.start();
         }
     }
 

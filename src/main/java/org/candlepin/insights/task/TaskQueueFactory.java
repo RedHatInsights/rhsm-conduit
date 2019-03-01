@@ -14,6 +14,7 @@
  */
 package org.candlepin.insights.task;
 
+import org.candlepin.insights.task.kafka.KafkaTaskProcessor;
 import org.candlepin.insights.task.kafka.KafkaTaskQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,12 +24,26 @@ public class TaskQueueFactory implements FactoryBean<TaskQueue> {
 
     private static Logger log = LoggerFactory.getLogger(TaskQueueFactory.class);
 
+    private TaskWorker worker;
+
+    public TaskQueueFactory(TaskWorker worker) {
+        this.worker = worker;
+    }
+
     @Override
     public TaskQueue getObject() throws Exception {
         // TODO The type of queue and what groups to use should be configurable.
+        // TODO Add the In-Memory queue implementation here.
         log.info("Using a KafkaTaskQueue...");
+
+        KafkaTaskProcessor processor = new KafkaTaskProcessor(TaskQueue.TASK_GROUP);
+        // Set the worker as the task listener so that the worker will be notified
+        // that there's work to do when a message is received from Kafka.
+        processor.addTaskListener(worker);
+
+        // Create the queue and register any processors.
         KafkaTaskQueue queue = new KafkaTaskQueue();
-        queue.registerProcessors(TaskQueue.TASK_GROUP);
+        queue.registerProcessors(processor);
         return queue;
     }
 

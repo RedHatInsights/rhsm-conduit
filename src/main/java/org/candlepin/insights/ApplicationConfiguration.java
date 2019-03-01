@@ -129,11 +129,6 @@ public class ApplicationConfiguration {
     }
 
     @Bean
-    public TaskWorker taskWorker() {
-        return new TaskWorker();
-    }
-
-    @Bean
     public TaskQueueFactory taskQueueFactory(TaskWorker taskWorker) {
         return new TaskQueueFactory(taskWorker);
     }
