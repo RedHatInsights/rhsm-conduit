@@ -14,7 +14,12 @@
  */
 package org.candlepin.insights.task;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class UpdateOrgInventoryTask implements Task {
+
+    private static Logger log = LoggerFactory.getLogger(UpdateOrgInventoryTask.class);
 
     private String orgId;
 
@@ -24,6 +29,6 @@ public class UpdateOrgInventoryTask implements Task {
 
     @Override
     public void execute() {
-        // Updating org.
+        log.info("Updating inventory for org: {}", orgId);
     }
 }

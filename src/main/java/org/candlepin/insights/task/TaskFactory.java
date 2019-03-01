@@ -14,11 +14,14 @@
  */
 package org.candlepin.insights.task;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class TaskFactory {
 
     public Task build(TaskDescriptor taskDescriptor) {
         if (taskDescriptor.getTaskType() == TaskType.UPDATE_ORG_INVENTORY) {
-            return new UpdateOrgInventoryTask(taskDescriptor.getArg("ord_id"));
+            return new UpdateOrgInventoryTask(taskDescriptor.getArg("org_id"));
         }
         throw new RuntimeException("Could not build task. Unknown task type: " + taskDescriptor.getTaskType());
     }
