@@ -18,12 +18,16 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.candlepin.insights.task.Task;
 import org.candlepin.insights.task.TaskQueue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
 public class KafkaTaskQueue implements TaskQueue {
+
+    private static Logger log = LoggerFactory.getLogger(KafkaTaskQueue.class);
 
     private KafkaProducer<String, String> producer;
     private List<KafkaTaskProcessor> processors;
@@ -48,18 +52,23 @@ public class KafkaTaskQueue implements TaskQueue {
     @Override
     public void enqueue(Task task) {
         // TODO Need to create a custom serializer for sending a task, and a deserializer for receiving a task.
-        producer.send(new ProducerRecord<>("rhsm-conduit-work-items", task.getValue("org_id")));
+        log.debug("Sending task to kafka...");
+        producer.send(new ProducerRecord<>(task.getGroupId(), "rhsm-conduit-task", task.getValue("org_id")));
     }
 
     @Override
     public void registerProcessors(String... taskGroups) {
         for (String group : taskGroups) {
-            processors.add(new KafkaTaskProcessor(group));
+            log.info("Registering Kafka task processor for task group: {}", group);
+            KafkaTaskProcessor processor = new KafkaTaskProcessor(group);
+            processors.add(processor);
+            processor.start();
         }
     }
 
     @Override
     public void destroy() throws Exception {
+        log.info("Stopping all kafka task processors...");
         processors.forEach(KafkaTaskProcessor::stop);
     }
 }

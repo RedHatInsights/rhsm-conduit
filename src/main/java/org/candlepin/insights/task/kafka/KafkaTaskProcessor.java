@@ -35,7 +35,7 @@ public class KafkaTaskProcessor implements TaskProcessor {
     public KafkaTaskProcessor(String taskGroup) {
         Properties consumerProperties = new Properties();
         consumerProperties.put("bootstrap.servers", "localhost:9092");
-        consumerProperties.put("group.id", taskGroup);
+        consumerProperties.put("group.id", "rhsm-task-processor");
         consumerProperties.put("enable.auto.commit", "false");
         consumerProperties.put("max.poll.records", "1");
         consumerProperties.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
