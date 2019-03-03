@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Red Hat, Inc.
+ * Copyright (c) 2009 - 2019 Red Hat, Inc.
  *
  * This software is licensed to you under the GNU General Public License,
  * version 2 (GPLv2). There is NO WARRANTY for this software, express or
@@ -14,8 +14,16 @@
  */
 package org.candlepin.insights.task;
 
+
+/**
+ * Defines a unit of async work that is to be performed by rhsm-conduit. Task instances are built by
+ * the TaskFactory.
+ */
 public interface Task {
 
-    public void execute();
+    /**
+     * Performs the work defined by a Task instance.
+     */
+    void execute();
 
 }

@@ -16,6 +16,11 @@ package org.candlepin.insights.task;
 
 import org.springframework.stereotype.Component;
 
+
+/**
+ * A TaskWorker executes a task when it is notified by a processor that a task was received
+ * from a Queue. The task worker should be added as a listener to a TaskQueue's TaskProcessors.
+ */
 @Component
 public class TaskWorker implements TaskListener {
 
@@ -25,6 +30,11 @@ public class TaskWorker implements TaskListener {
         this.taskFactory = new TaskFactory();
     }
 
+    /**
+     * When a TaskDescriptor is received, executes the described Task.
+     *
+     * @param taskDescriptor the task descriptor that was received.
+     */
     @Override
     public void onTaskReceived(TaskDescriptor taskDescriptor) {
         Task toExecute = taskFactory.build(taskDescriptor);

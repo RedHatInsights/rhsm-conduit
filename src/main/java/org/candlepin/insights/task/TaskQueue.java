@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Red Hat, Inc.
+ * Copyright (c) 2009 - 2019 Red Hat, Inc.
  *
  * This software is licensed to you under the GNU General Public License,
  * version 2 (GPLv2). There is NO WARRANTY for this software, express or
@@ -16,11 +16,26 @@ package org.candlepin.insights.task;
 
 import org.springframework.beans.factory.DisposableBean;
 
+/**
+ * A TaskQueue is responsible for storing tasks until they are picked up by a registered processor
+ * for processing.
+ *
+ * @param <P> the type of TaskProcessor that will process the tasks in this queue.
+ */
 public interface TaskQueue<P extends TaskProcessor> extends DisposableBean {
 
-    public static final String TASK_GROUP = "rhsm-conduit-tasks";
+    String TASK_GROUP = "rhsm-conduit-tasks";
 
+    /**
+     * Enqueues a task that is to be processed by the registered processor.
+     *
+     * @param taskDescriptor a TaskDescriptor describing the task that is to be processed.
+     */
     void enqueue(TaskDescriptor taskDescriptor);
 
+    /**
+     * Registers a TaskProcessor with this queue.
+     * @param processors
+     */
     void registerProcessors(P ... processors);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Red Hat, Inc.
+ * Copyright (c) 2009 - 2019 Red Hat, Inc.
  *
  * This software is licensed to you under the GNU General Public License,
  * version 2 (GPLv2). There is NO WARRANTY for this software, express or
@@ -14,14 +14,28 @@
  */
 package org.candlepin.insights.task;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.candlepin.insights.task.kafka.KafkaTaskProcessor;
 import org.candlepin.insights.task.kafka.KafkaTaskQueue;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 
+
+/**
+ * Instantiates and configures a TaskQueue implementation based on the application config.
+ *
+ * It is expected that a TaskQueue instance has the appropriate processors already added, and
+ * these processors should have the TaskWorker added as a listener so that it can be notified
+ * when a task is ready to be executed.
+ */
+// TODO The type of queue and what groups to use should be configurable.
+// TODO Add the In-Memory queue implementation here.
+// TODO Look into a way that we can load a separate spring @Configuration class based on the config.
+//      This way, all injection is done based on the config and not all in this class.
 public class TaskQueueFactory implements FactoryBean<TaskQueue> {
 
     private static Logger log = LoggerFactory.getLogger(TaskQueueFactory.class);
@@ -34,8 +48,7 @@ public class TaskQueueFactory implements FactoryBean<TaskQueue> {
 
     @Override
     public TaskQueue getObject() throws Exception {
-        // TODO The type of queue and what groups to use should be configurable.
-        // TODO Add the In-Memory queue implementation here.
+
         log.info("Using a KafkaTaskQueue...");
 
         KafkaTaskProcessor processor = new KafkaTaskProcessor(TaskQueue.TASK_GROUP, mapper);

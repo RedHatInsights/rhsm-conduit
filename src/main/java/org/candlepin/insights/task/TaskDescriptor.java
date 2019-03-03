@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 - 2019 Red Hat, Inc.
+ * Copyright (c) 2009 - 2019 Red Hat, Inc.
  *
  * This software is licensed to you under the GNU General Public License,
  * version 2 (GPLv2). There is NO WARRANTY for this software, express or
@@ -17,15 +17,36 @@ package org.candlepin.insights.task;
 import java.util.HashMap;
 import java.util.Map;
 
+
+/**
+ * A TaskDescriptor describes a Task that is to be stored in a TaskQueue and is to be
+ * eventually executed by a TaskWorker.
+ *
+ * When describing a Task that is the be queued, a descriptor must at least define the
+ * task group that a task belongs to, as well as the TaskType of the Task.
+ *
+ * A TaskDescritor requires two key pieces of data; a groupId and a TaskType.
+ *
+ * A groupId should be specified so that the TaskQueue can use it for task organization within the queue.
+ *
+ * A TaskType should be specified so that the TaskFactory can use it to build an associated Task object
+ * that defines the actual work that is to be done.
+ *
+ * A descriptor can also specify any task arguments to customize task execution.
+ */
 public class TaskDescriptor {
 
     private String groupId;
     private TaskType taskType;
     private Map<String, String> taskArgs;
 
-    public TaskDescriptor(String groupId, TaskType taskType) {
-        this.groupId = groupId;
+    public TaskDescriptor() {
         this.taskArgs = new HashMap<>();
+    }
+
+    public TaskDescriptor(String groupId, TaskType taskType) {
+        this();
+        this.groupId = groupId;
         this.taskType = taskType;
     }
 
@@ -58,6 +79,11 @@ public class TaskDescriptor {
     //
     public TaskDescriptor groupId(String groupId) {
         setGroupId(groupId);
+        return this;
+    }
+
+    public TaskDescriptor taskType(TaskType taskType) {
+        this.taskType = taskType;
         return this;
     }
 

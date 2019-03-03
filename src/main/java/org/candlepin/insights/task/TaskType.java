@@ -1,4 +1,4 @@
-package org.candlepin.insights.task;/*
+/*
  * Copyright (c) 2009 - 2019 Red Hat, Inc.
  *
  * This software is licensed to you under the GNU General Public License,
@@ -12,7 +12,11 @@ package org.candlepin.insights.task;/*
  * granted to use or replicate Red Hat trademarks that are incorporated
  * in this software or its documentation.
  */
+package org.candlepin.insights.task;
 
+/**
+ * An enumeration representing the types of tasks that can be handled by rhsm-conduit.
+ */
 public enum TaskType {
     UPDATE_ORG_INVENTORY
 }

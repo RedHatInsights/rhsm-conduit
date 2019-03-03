@@ -17,14 +17,29 @@ package org.candlepin.insights.task;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+
+/**
+ * A TaskManager is an injectable component that is responsible for putting tasks into
+ * the TaskQueue. This is the entry point into the task system. Any class that would like
+ * to initiate a task within conduit, should inject this class and call the appropriate
+ * method.
+ */
 @Component
 public class TaskManager {
 
     @Autowired TaskQueue queue;
 
+    /**
+     * Initiates a task that will update the inventory of the specified organization's ID.
+     *
+     * @param orgId the ID of the org in which to update.
+     */
+    @SuppressWarnings("indentation")
     public void updateOrgInventory(String orgId) {
         queue.enqueue(
-            new TaskDescriptor(TaskQueue.TASK_GROUP, TaskType.UPDATE_ORG_INVENTORY)
+            new TaskDescriptor()
+                .taskType(TaskType.UPDATE_ORG_INVENTORY)
+                .groupId(TaskQueue.TASK_GROUP)
                 .setArg("org_id", orgId)
         );
     }

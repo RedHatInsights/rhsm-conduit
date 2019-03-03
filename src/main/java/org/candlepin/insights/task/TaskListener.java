@@ -14,8 +14,17 @@
  */
 package org.candlepin.insights.task;
 
+
+/**
+ * An interface that defines the events that occur in a TaskProcessor.
+ */
 public interface TaskListener {
 
-    public void onTaskReceived(TaskDescriptor taskDescriptor);
+    /**
+     * Called by a processor when a task has been received by from the Queue.
+     *
+     * @param taskDescriptor the task descriptor that was received.
+     */
+    void onTaskReceived(TaskDescriptor taskDescriptor);
 
 }

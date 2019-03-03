@@ -17,6 +17,11 @@ package org.candlepin.insights.task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
+/**
+ * A task that retrieves the Consumer data associated with an organization from Pinhead, and sends
+ * that data into the insights host inventory.
+ */
 public class UpdateOrgInventoryTask implements Task {
 
     private static Logger log = LoggerFactory.getLogger(UpdateOrgInventoryTask.class);
@@ -29,6 +34,8 @@ public class UpdateOrgInventoryTask implements Task {
 
     @Override
     public void execute() {
+        // TODO Pull the Consumer data from Pinhead.
+        // TODO Push the associated Consumer data into inventory via the InventoryService.
         log.info("Updating inventory for org: {}", orgId);
     }
 }
