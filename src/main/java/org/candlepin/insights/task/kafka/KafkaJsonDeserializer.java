@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Red Hat, Inc.
+ * Copyright (c) 2009 - 2019 Red Hat, Inc.
  *
  * This software is licensed to you under the GNU General Public License,
  * version 2 (GPLv2). There is NO WARRANTY for this software, express or
@@ -15,15 +15,21 @@
 package org.candlepin.insights.task.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.apache.kafka.common.serialization.Deserializer;
 
 import java.util.Map;
 
+/**
+ * A JSON deserialization for deserializing Kafka messages coming from the queue.
+ *
+ * @param <T> the type of object to deserialize.
+ */
 public class KafkaJsonDeserializer<T> implements Deserializer<T> {
 
     private ObjectMapper mapper;
 
-    private Class <T> type;
+    private Class<T> type;
 
     public KafkaJsonDeserializer(Class type, ObjectMapper mapper) {
         this.type = type;
@@ -40,7 +46,8 @@ public class KafkaJsonDeserializer<T> implements Deserializer<T> {
         T obj = null;
         try {
             obj = mapper.readValue(bytes, type);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException("Unable to deserialize object.", e);
         }
         return obj;

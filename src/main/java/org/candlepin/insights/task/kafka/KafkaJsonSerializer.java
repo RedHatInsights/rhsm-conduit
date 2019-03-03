@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Red Hat, Inc.
+ * Copyright (c) 2009 - 2019 Red Hat, Inc.
  *
  * This software is licensed to you under the GNU General Public License,
  * version 2 (GPLv2). There is NO WARRANTY for this software, express or
@@ -15,10 +15,17 @@
 package org.candlepin.insights.task.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.apache.kafka.common.serialization.Serializer;
 
 import java.util.Map;
 
+
+
+/**
+ * A JSON serialization for serializing Kafka messages to JSON strings.
+ * @param <T>
+ */
 public class KafkaJsonSerializer<T> implements Serializer<T> {
 
     private ObjectMapper mapper;
@@ -37,7 +44,8 @@ public class KafkaJsonSerializer<T> implements Serializer<T> {
         byte[] retVal = null;
         try {
             retVal = mapper.writeValueAsBytes(data);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException("Unable to serialize object.", e);
         }
         return retVal;

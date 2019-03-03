@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Red Hat, Inc.
+ * Copyright (c) 2009 - 2019 Red Hat, Inc.
  *
  * This software is licensed to you under the GNU General Public License,
  * version 2 (GPLv2). There is NO WARRANTY for this software, express or
@@ -14,12 +14,14 @@
  */
 package org.candlepin.insights.task.kafka;
 
+import org.candlepin.insights.task.TaskDescriptor;
+import org.candlepin.insights.task.TaskProcessor;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.candlepin.insights.task.TaskDescriptor;
-import org.candlepin.insights.task.TaskProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +29,10 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Properties;
 
+
+/**
+ * Processes messages received from a Kafka queue.
+ */
 public class KafkaTaskProcessor extends TaskProcessor {
 
     private static Logger log = LoggerFactory.getLogger(KafkaTaskProcessor.class);
@@ -34,6 +40,13 @@ public class KafkaTaskProcessor extends TaskProcessor {
     private KafkaConsumer<String, TaskDescriptor> consumer;
     private Thread reader;
 
+    /**
+     * Create a processor associated to the defined taskGroup, and create the serializers/deserializers
+     * from the specified ObjectMapper.
+     *
+     * @param taskGroup the task address to subscribe to.
+     * @param mapper the object mapper that should be used to do message serialization/deserialization
+     */
     public KafkaTaskProcessor(String taskGroup, ObjectMapper mapper) {
 
         Properties consumerProperties = new Properties();
@@ -41,9 +54,8 @@ public class KafkaTaskProcessor extends TaskProcessor {
         consumerProperties.put("group.id", "rhsm-task-processor");
         consumerProperties.put("enable.auto.commit", "false");
         consumerProperties.put("max.poll.records", "1");
-//        consumerProperties.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-//        consumerProperties.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        consumer = new KafkaConsumer<>(consumerProperties, new StringDeserializer(), new KafkaJsonDeserializer<>(TaskDescriptor.class, mapper));
+        consumer = new KafkaConsumer<>(consumerProperties, new StringDeserializer(),
+            new KafkaJsonDeserializer<>(TaskDescriptor.class, mapper));
         // TODO Need to determine the difference between this prop and the group.id property.
         consumer.subscribe(Arrays.asList(taskGroup));
 
@@ -52,7 +64,8 @@ public class KafkaTaskProcessor extends TaskProcessor {
             public void run() {
                 try {
                     while (true) {
-                        ConsumerRecords<String, TaskDescriptor> records = consumer.poll(Duration.ofSeconds(5));
+                        ConsumerRecords<String, TaskDescriptor> records =
+                            consumer.poll(Duration.ofSeconds(5));
                         if (records.isEmpty()) {
                             log.info("No messages were found...");
                             continue;
