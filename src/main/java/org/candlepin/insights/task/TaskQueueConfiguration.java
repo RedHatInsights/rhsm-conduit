@@ -21,6 +21,7 @@
 package org.candlepin.insights.task;
 
 import org.candlepin.insights.task.queue.TaskQueue;
+import org.candlepin.insights.task.queue.inmemory.InMemoryTaskQueue;
 import org.candlepin.insights.task.queue.passthrough.PassThroughTaskQueue;
 
 import org.slf4j.Logger;
@@ -48,11 +49,18 @@ public class TaskQueueConfiguration {
     public static final String TASK_GROUP = "rhsm-conduit-tasks";
 
     @Bean
-    @ConditionalOnProperty(prefix = "rhsm-conduit.tasks", name = "queue", havingValue = "pass-through",
-        matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "rhsm-conduit.tasks", name = "queue", havingValue = "pass-through")
     TaskQueue passThroughQueue(TaskWorker worker) {
         log.info("Configuring a pass-through task queue.");
         return new PassThroughTaskQueue(worker);
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "rhsm-conduit.tasks", name = "queue", havingValue = "in-memory",
+        matchIfMissing = true)
+    TaskQueue inMemoryQueue(TaskWorker worker) {
+        log.info("Configuring an in-memory task queue.");
+        return new InMemoryTaskQueue(worker);
     }
 
 }
