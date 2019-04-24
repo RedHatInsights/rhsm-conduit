@@ -50,7 +50,8 @@ public class OpenApiSpecController {
             );
         }
         try {
-            return IOUtils.toString(contents, Charset.forName("UTF-8"));
+            Charset.forName("UTF-8");
+            return IOUtils.toString(contents, Charset.forName("UTF-8")); // should use Charset.forName()
         }
         catch (IOException e) {
             throw new RhsmConduitException(
