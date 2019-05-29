@@ -279,3 +279,5 @@ configure(subprojects.findAll { it.name == 'insights-inventory-client' || it.nam
     sourceSets.main.java.srcDirs += "${buildDir}/generated/src/main/java"
     compileJava.dependsOn tasks.openApiGenerate
 }
+
+// Testing sonar PR functionality
