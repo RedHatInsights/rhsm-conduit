@@ -76,6 +76,7 @@ public class InventoryController {
     public static final String VIRT_IS_GUEST = "virt.is_guest";
     public static final String UNKNOWN = "unknown";
     public static final String TRUE = "True";
+    public static final String NONE = "none";
 
     @Autowired
     private InventoryService inventoryService;
@@ -160,8 +161,8 @@ public class InventoryController {
             .forEach(entry -> {
                 List<String> macs = Arrays.asList(entry.getValue().split(COMMA_REGEX));
                 macAddresses.addAll(
-                    macs.stream().filter(mac -> mac != null && !mac.equalsIgnoreCase("none") &&
-                    !mac.equalsIgnoreCase("unknown")).collect(Collectors.toList())
+                    macs.stream().filter(mac -> mac != null && !mac.equalsIgnoreCase(NONE) &&
+                    !mac.equalsIgnoreCase(UNKNOWN)).collect(Collectors.toList())
                 );
             });
 
