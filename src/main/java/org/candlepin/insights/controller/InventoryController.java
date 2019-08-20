@@ -74,6 +74,8 @@ public class InventoryController {
     public static final String MEMORY_MEMTOTAL = "memory.memtotal";
     public static final String UNAME_MACHINE = "uname.machine";
     public static final String VIRT_IS_GUEST = "virt.is_guest";
+    public static final String UNKNOWN = "unknown";
+    public static final String TRUE = "True";
 
     @Autowired
     private InventoryService inventoryService;
@@ -173,7 +175,13 @@ public class InventoryController {
         Set<String> ipAddresses = new HashSet<>();
         pinheadFacts.entrySet().stream()
             .filter(entry -> entry.getKey().matches(IP_ADDRESS_FACT_REGEX) && !isEmpty(entry.getValue()))
-            .forEach(entry -> ipAddresses.addAll(Arrays.asList(entry.getValue().split(COMMA_REGEX))));
+            .forEach(entry -> {
+                List<String> items = Arrays.asList(entry.getValue().split(COMMA_REGEX));
+                ipAddresses.addAll(items.stream()
+                    .filter(addr -> !isEmpty(addr) && !addr.equalsIgnoreCase(UNKNOWN))
+                    .collect(Collectors.toList())
+                );
+            });
 
         if (!ipAddresses.isEmpty()) {
             facts.setIpAddresses(new ArrayList(ipAddresses));
@@ -185,8 +193,8 @@ public class InventoryController {
         ConduitFacts facts) {
 
         String isGuest = pinheadFacts.get(VIRT_IS_GUEST);
-        if (!isEmpty(isGuest) && !isGuest.equalsIgnoreCase("Unknown")) {
-            facts.setIsVirtual(isGuest.equalsIgnoreCase("True"));
+        if (!isEmpty(isGuest) && !isGuest.equalsIgnoreCase(UNKNOWN)) {
+            facts.setIsVirtual(isGuest.equalsIgnoreCase(TRUE));
         }
 
         String vmHost = consumer.getHypervisorName();
