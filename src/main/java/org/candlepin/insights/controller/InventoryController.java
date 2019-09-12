@@ -23,7 +23,6 @@ package org.candlepin.insights.controller;
 import org.candlepin.insights.api.model.OrgInventory;
 import org.candlepin.insights.inventory.ConduitFacts;
 import org.candlepin.insights.inventory.InventoryService;
-import org.candlepin.insights.orgsync.OrgListStrategy;
 import org.candlepin.insights.pinhead.PinheadService;
 import org.candlepin.insights.pinhead.client.model.Consumer;
 
@@ -80,17 +79,19 @@ public class InventoryController {
     public static final String TRUE = "True";
     public static final String NONE = "none";
 
-    @Autowired
-    private InventoryService inventoryService;
+    private final InventoryService inventoryService;
+
+    private final PinheadService pinheadService;
+
+    private final Validator validator;
 
     @Autowired
-    private PinheadService pinheadService;
-
-    @Autowired
-    private Validator validator;
-
-    @Autowired
-    private OrgListStrategy orgListStrategy;
+    public InventoryController(InventoryService inventoryService, PinheadService pinheadService,
+        Validator validator) {
+        this.inventoryService = inventoryService;
+        this.pinheadService = pinheadService;
+        this.validator = validator;
+    }
 
     private static boolean isEmpty(String value) {
         return value == null || value.isEmpty();
@@ -115,7 +116,7 @@ public class InventoryController {
         return facts;
     }
 
-    private void extractHardwareFacts(Map<String, String> pinheadFacts, ConduitFacts facts) {
+    protected void extractHardwareFacts(Map<String, String> pinheadFacts, ConduitFacts facts) {
         String systemUuid = pinheadFacts.get(DMI_SYSTEM_UUID);
         if (!isEmpty(systemUuid)) {
             if (systemUuid.matches(UUID_REGEX)) {
@@ -157,8 +158,7 @@ public class InventoryController {
         }
     }
 
-    private void extractNetworkFacts(Map<String, String> pinheadFacts, ConduitFacts facts) {
-
+    protected void extractNetworkFacts(Map<String, String> pinheadFacts, ConduitFacts facts) {
         String fqdn = pinheadFacts.get(NETWORK_FQDN);
         if (!isEmpty(fqdn)) {
             facts.setFqdn(fqdn);
@@ -199,23 +199,36 @@ public class InventoryController {
 
     }
 
-    private void extractHypervisorFacts(Consumer consumer, Map<String, String> pinheadFacts,
+    protected void extractHypervisorFacts(Consumer consumer, Map<String, String> pinheadFacts,
         ConduitFacts facts) {
 
         String isGuest = pinheadFacts.get(VIRT_IS_GUEST);
         if (!isEmpty(isGuest) && !isGuest.equalsIgnoreCase(UNKNOWN)) {
             facts.setIsVirtual(isGuest.equalsIgnoreCase(TRUE));
+
+            if (Boolean.TRUE.equals(facts.getIsVirtual())) {
+                facts.setIsHypervisorUnknown(isEmpty(consumer.getHypervisorUuid()));
+            }
         }
 
         String vmHost = consumer.getHypervisorName();
         if (!isEmpty(vmHost)) {
+            // In case some system has a hypervisor name but no hypervisor UUID we still want to mark
+            // it as having a known hypervisor.
+            facts.setIsHypervisorUnknown(false);
             facts.setVmHost(vmHost);
         }
     }
 
-    private List<ConduitFacts> getValidatedConsumers(String orgId) {
+    protected List<ConduitFacts> getValidatedConsumers(String orgId) {
         List<ConduitFacts> conduitFactsForOrg = new LinkedList<>();
+        Set<String> hypervisorUuids = new HashSet<>();
+
         for (Consumer consumer : pinheadService.getOrganizationConsumers(orgId)) {
+            if (!isEmpty(consumer.getHypervisorUuid())) {
+                hypervisorUuids.add(consumer.getHypervisorUuid());
+            }
+
             ConduitFacts facts;
             try {
                 facts = getFactsFromConsumer(consumer);
@@ -224,6 +237,7 @@ public class InventoryController {
                 log.warn(String.format("Skipping consumer %s due to exception", consumer.getUuid()), e);
                 continue;
             }
+
             facts.setAccountNumber(consumer.getAccountNumber());
 
             Set<ConstraintViolation<ConduitFacts>> violations = validator.validate(facts);
@@ -237,6 +251,11 @@ public class InventoryController {
             }
 
         }
+
+        conduitFactsForOrg.stream().forEach(
+            cf -> cf.setIsHypervisor(hypervisorUuids.contains(cf.getSubscriptionManagerId()))
+        );
+
         return conduitFactsForOrg;
     }
 

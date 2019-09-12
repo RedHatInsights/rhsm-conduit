@@ -166,6 +166,10 @@ components:
           type: string
         is_virtual:
           type: boolean
+        is_hypervisor:
+          type: boolean
+        is_hypervisor_unknown:
+          type: boolean
         vm_host:
           type: string
         rh_prod:

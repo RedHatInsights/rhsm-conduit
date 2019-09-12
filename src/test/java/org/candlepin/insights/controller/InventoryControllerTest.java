@@ -33,6 +33,8 @@ import org.candlepin.insights.pinhead.client.model.InstalledProducts;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -91,6 +93,7 @@ public class InventoryControllerTest {
         expected.setOrgId("456");
         expected.setAccountNumber("account");
         expected.setSubscriptionManagerId(uuid.toString());
+        expected.setIsHypervisor(false);
         verify(inventoryService).sendHostUpdate(Mockito.eq(Collections.singletonList(expected)));
     }
 
@@ -305,17 +308,62 @@ public class InventoryControllerTest {
         cfacts1.setAccountNumber("account");
         cfacts1.setSubscriptionManagerId(uuid1.toString());
         cfacts1.setBiosUuid(bios1);
+        cfacts1.setIsHypervisor(false);
         ConduitFacts cfacts2 = new ConduitFacts();
         cfacts2.setOrgId("456");
         cfacts2.setAccountNumber("account");
         cfacts2.setSubscriptionManagerId(uuid2.toString());
+        cfacts2.setIsHypervisor(false);
         verify(inventoryService).sendHostUpdate(Mockito.eq(Arrays.asList(cfacts1, cfacts2)));
     }
 
-    private void assertContainSameElements(List<String> list1, List<String> list2) {
-        Collections.sort(list1);
-        Collections.sort(list2);
-        assertEquals(list1, list2);
+    @ParameterizedTest
+    @CsvSource({
+        "FooVisor, 9ceba8ca-ccc7-4a95-9ff1-27123a5a71a2, false",
+        "'', '', true"
+    })
+    public void testHandlesGuestsWithNoKnownHypervisor(String hypervisorName, String hypervisorUUID,
+        boolean isUnknown) {
+        Map<String, String> pinheadFacts = new HashMap<String, String>();
+        pinheadFacts.put(InventoryController.VIRT_IS_GUEST, "true");
+
+        Consumer c = new Consumer();
+        c.setHypervisorUuid(hypervisorUUID);
+        c.setHypervisorName(hypervisorName);
+
+        ConduitFacts conduitFacts = new ConduitFacts();
+        controller.extractHypervisorFacts(c, pinheadFacts, conduitFacts);
+        assertEquals(isUnknown, conduitFacts.getIsHypervisorUnknown());
     }
 
+    @Test
+    public void marksHypervisors() {
+        Consumer guest = new Consumer();
+        guest.accountNumber("accountNumber");
+        guest.setUuid("guestUuid");
+        guest.setHypervisorUuid("hypervisorUuid");
+        guest.setHypervisorName("hypervisorName");
+        guest.setGuestId("guestId");
+        guest.setOrgId("orgId");
+        guest.getFacts().put("virt.is_guest", "True");
+
+        Consumer unrelated = new Consumer();
+        unrelated.accountNumber("accountNumber");
+        unrelated.setUuid("unrelatedUuid");
+        unrelated.setOrgId("orgId");
+
+        Consumer hypervisor = new Consumer();
+        hypervisor.accountNumber("accountNumber");
+        hypervisor.setUuid("hypervisorUuid");
+        hypervisor.setOrgId("orgId");
+
+        Iterable<Consumer> iterable = Arrays.asList(guest, unrelated, hypervisor);
+        when(pinheadService.getOrganizationConsumers(eq("123"))).thenReturn(iterable);
+
+        List<ConduitFacts> results = controller.getValidatedConsumers("123");
+
+        assertEquals(false, results.get(0).getIsHypervisor());
+        assertEquals(false, results.get(1).getIsHypervisor());
+        assertEquals(true, results.get(2).getIsHypervisor());
+    }
 }
