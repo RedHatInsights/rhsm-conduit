@@ -61,7 +61,7 @@ public class KafkaTaskProcessor {
         finally {
             // We always ack the message regardless of if there are failures.
             // There is no need to retry the message on failure since the task
-            // either be manually re-triggered or will run on the next schedule.
+            // can either be manually re-triggered or will run on the next schedule.
             acknowledgment.acknowledge();
         }
     }
