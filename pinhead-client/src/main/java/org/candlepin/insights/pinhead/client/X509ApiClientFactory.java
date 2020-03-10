@@ -24,6 +24,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.client.jaxrs.ClientHttpEngine;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
@@ -68,6 +69,7 @@ public class X509ApiClientFactory implements FactoryBean<ApiClient>  {
         return ApiClient.class;
     }
 
+    @SuppressWarnings("java:S2095")
     private Client buildHttpClient(X509ApiClientFactoryConfiguration x509Config, ApiClient client)
         throws GeneralSecurityException {
         HttpClientBuilder apacheBuilder = HttpClientBuilder.create();
@@ -99,6 +101,10 @@ public class X509ApiClientFactory implements FactoryBean<ApiClient>  {
             SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
             sslContext.init(keyManagers, trustManagers, null);
             apacheBuilder.setSSLContext(sslContext);
+            PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
+            connectionManager.setDefaultMaxPerRoute(Integer.MAX_VALUE);
+            connectionManager.setMaxTotal(Integer.MAX_VALUE);
+            apacheBuilder.setConnectionManager(connectionManager);
         }
         catch (KeyStoreException | NoSuchAlgorithmException | IOException e)  {
             throw new GeneralSecurityException("Failed to init SSLContext", e);
