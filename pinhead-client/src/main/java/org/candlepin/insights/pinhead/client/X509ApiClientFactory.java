@@ -24,7 +24,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.client.jaxrs.ClientHttpEngine;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
@@ -101,10 +100,6 @@ public class X509ApiClientFactory implements FactoryBean<ApiClient>  {
             SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
             sslContext.init(keyManagers, trustManagers, null);
             apacheBuilder.setSSLContext(sslContext);
-            PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
-            connectionManager.setDefaultMaxPerRoute(Integer.MAX_VALUE);
-            connectionManager.setMaxTotal(Integer.MAX_VALUE);
-            apacheBuilder.setConnectionManager(connectionManager);
         }
         catch (KeyStoreException | NoSuchAlgorithmException | IOException e)  {
             throw new GeneralSecurityException("Failed to init SSLContext", e);
@@ -112,6 +107,10 @@ public class X509ApiClientFactory implements FactoryBean<ApiClient>  {
 
         RequestConfig cookieConfig = RequestConfig.custom().setCookieSpec(CookieSpecs.IGNORE_COOKIES).build();
         apacheBuilder.setDefaultRequestConfig(cookieConfig);
+        // Bump the max connections so that our task processors do not
+        // block waiting to connect to Pinhead.
+        apacheBuilder.setMaxConnPerRoute(Integer.MAX_VALUE);
+        apacheBuilder.setMaxConnTotal(Integer.MAX_VALUE);
         HttpClient httpClient = apacheBuilder.build();
 
         // We've now constructed a basic Apache HttpClient.  Now we wire that in to RestEasy.  There is a
