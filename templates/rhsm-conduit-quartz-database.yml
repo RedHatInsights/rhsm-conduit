@@ -1,0 +1,129 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: rhsm-conduit
+
+parameters:
+  - name: NAMESPACE
+    description: Name of your project (e.g. myproject)
+
+objects:
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: rhsm-conduit-quartz-postgresql
+    namespace: "${NAMESPACE}"
+  spec:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: {{ rhsm_conduit_quartz_db_volume_capacity }}
+
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: rhsm-conduit
+    annotations:
+      template.alpha.openshift.io/wait-for-ready: "true"
+    name: rhsm-conduit-quartz-postgresql
+    namespace: "${NAMESPACE}"
+  spec:
+    replicas: 1
+    selector:
+      name: rhsm-conduit-quartz-postgresql
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          name: rhsm-conduit-quartz-postgresql
+      spec:
+        containers:
+          - capabilities: {}
+            env:
+              - name: POSTGRESQL_USER
+                valueFrom:
+                  secretKeyRef:
+                    key: database-user
+                    name: rhsm-conduit-quartz-postgresql
+              - name: POSTGRESQL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    key: database-password
+                    name: rhsm-conduit-quartz-postgresql
+              - name: POSTGRESQL_DATABASE
+                valueFrom:
+                  secretKeyRef:
+                    key: database-name
+                    name: rhsm-conduit-quartz-postgresql
+            image: openshift/postgresql
+            imagePullPolicy: IfNotPresent
+            livenessProbe:
+              exec:
+                command:
+                  - /usr/libexec/check-container
+                  - --live
+              initialDelaySeconds: 120
+              timeoutSeconds: 10
+            name: postgresql
+            ports:
+              - containerPort: 5432
+                protocol: TCP
+            readinessProbe:
+              exec:
+                command:
+                  - /usr/libexec/check-container
+              initialDelaySeconds: 5
+              timeoutSeconds: 1
+            resources:
+              limits:
+                memory: {{ rhsm_conduit_quartz_db_memory_limit }}
+            securityContext:
+              capabilities: {}
+              privileged: false
+            terminationMessagePath: /dev/termination-log
+            volumeMounts:
+              - mountPath: /var/lib/pgsql/data
+                name: rhsm-conduit-quartz-postgresql-data
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        volumes:
+          - name: rhsm-conduit-quartz-postgresql-data
+            persistentVolumeClaim:
+              claimName: rhsm-conduit-quartz-postgresql
+    triggers:
+      - imageChangeParams:
+          automatic: true
+          containerNames:
+            - postgresql
+          from:
+            kind: ImageStreamTag
+            name: postgresql:9.6
+            namespace: openshift
+        type: ImageChange
+      - type: ConfigChange
+  status: {}
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      template.openshift.io/expose-uri: postgres://{.spec.clusterIP}:{.spec.ports[?(.name=="postgresql")].port}
+    labels:
+      app: rhsm-conduit
+    name: rhsm-conduit-quartz-postgresql
+    namespace: "${NAMESPACE}"
+  spec:
+    ports:
+      - name: postgresql
+        port: 5432
+        protocol: TCP
+        targetPort: 5432
+    selector:
+      name: rhsm-conduit-quartz-postgresql
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}

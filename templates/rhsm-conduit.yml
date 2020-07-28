@@ -1,0 +1,283 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: rhsm-conduit
+
+parameters:
+  - name: NAMESPACE
+    description: Name of your project (e.g. myproject)
+  - name: IMAGE_NAMESPACE
+    description: The namespace containing the build image.
+    value: buildfactory
+  - name: IMAGE_TAG
+    description: The image tag that should be used for the deployment
+    value: latest
+  - name: HOST_INVENTORY_HOST
+    description: The host inventory hostname.
+  - name: KAFKA_BOOTSTRAP_HOST
+    description: The address of the kafka instance.
+  - name: KAFKA_BOOTSTRAP_PORT
+    description: The port of the kafka instance.
+    value: '9092'
+
+objects:
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: rhsm-conduit-config
+    labels:
+      app: rhsm-conduit
+    namespace: ${NAMESPACE}
+  data:
+    logback.xml: |-
+      <?xml version="1.0" encoding="UTF-8"?>
+      <configuration scan="true" scanPeriod="60 seconds">
+        <contextName>rhsm-conduit</contextName>
+        <appender name="ConsoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+          <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+        </appender>
+        {% if cloudwatch_enabled %}
+        <appender name="EmergencyAppender" class="ch.qos.logback.core.ConsoleAppender">
+          <filter class="org.candlepin.insights.logging.CloudWatchEmergencyFilter" />
+          <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+        </appender>
+        <appender name="CloudWatchAppender" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">
+          <!-- TODO Not sure how to set this one -->
+          <region>${AWS_REGION}</region>
+          <logGroup>{{ cloudwatch_log_group }}</logGroup>
+          <logStream>{{ project }}</logStream>
+          <layout class="net.logstash.logback.layout.LogstashLayout" />
+          <appender-ref ref="EmergencyAppender" />
+        </appender>
+        {% endif %}
+
+        <logger name="org.candlepin" level="{{ log_level }}"/>
+
+        <root level="WARN">
+          {% if cloudwatch_enabled %}
+          <appender-ref ref="CloudWatchAppender" />
+          {% endif %}
+          <appender-ref ref="ConsoleAppender" />
+          <!--<appender-ref ref="RhsmConduitAppender" />-->
+          <!--<appender-ref ref="ErrorAppender" />-->
+        </root>
+      </configuration>
+    # Formatting must remain below to avoid extra lines in the config entry
+    org_sync_list.csv: |-
+      Account Number,Candlepin Org ID
+      {% for line in org_sync_list %}{{ line }}
+      {% endfor %}{% for line in rhsm_conduit_extra_accounts %}{{ line }}
+      {% endfor %}
+    rhsm-conduit.properties: |-
+      # Task queue options
+      rhsm-conduit.tasks.queue={{ task_queue }}
+      rhsm-conduit.tasks.task-group={{ task_group }}
+
+      {% if task_queue == 'kafka'%}
+      # Kafka task queue configuration
+      spring.kafka.bootstrap-servers=${RHSM_CONDUIT_KAFKA_ADDR}
+      spring.kafka.listener.concurrency={{ kafka_message_threads }}
+      spring.kafka.consumer.properties.reconnect.backoff.ms={{ kafka_consumer_reconnect_backoff }}
+      spring.kafka.consumer.properties.reconnect.backoff.max.ms={{ kafka_consumer_reconnect_backoff_max }}
+      spring.kafka.consumer.properties.default.api.timeout.ms={{ kafka_api_reconnect_timeout }}
+      spring.kafka.consumer.properties.max.poll.records=1
+      spring.kafka.consumer.properties.max.poll.interval.ms=1800000
+
+      {% if kafka_schema_registry_server_url is defined %}
+      spring.kafka.properties.schema.registry.url={{ kafka_schema_registry_server_url }}
+      spring.kafka.properties.auto.register.schemas={{ kafka_auto_register_schema }}
+      {% endif %}
+      {% endif %}
+
+      # Org sync options
+      rhsm-conduit.org-sync.strategy=fileBasedOrgListStrategy
+      rhsm-conduit.org-sync.schedule={{ org_sync_schedule }}
+      rhsm-conduit.org-sync.file-based-org-list-strategy.org-resource-location=file:/config/org_sync_list.csv
+
+      # inventory service options
+      {% if stub_inventory_api is not defined or not stub_inventory_api %}
+      rhsm-conduit.inventory-service.url=http://${INVENTORY_API_HOST}:8080/api/inventory/v1
+      rhsm-conduit.inventory-service.apiKey=${INVENTORY_API_KEY}
+      {% else %}
+      rhsm-conduit.inventory-service.useStub=true
+      {% endif%}
+      {% if enable_inventory_kafka is defined and enable_inventory_kafka %}
+      rhsm-conduit.inventory-service.enableKafka=true
+      rhsm-conduit.inventory-service.kafka.bootstrap-servers=${INVENTORY_KAFKA_ADDR}
+      rhsm-conduit.inventory-service.kafkaHostIngressTopic={{ inventory_host_ingress_topic | default('${INVENTORY_HOST_INGRESS_TOPIC:platform.inventory.host-ingress}') }}
+      {% endif %}
+
+      # pinhead options
+      {% if pinhead_url is defined %}
+      rhsm-conduit.pinhead.url={{ pinhead_url }}
+      rhsm-conduit.pinhead.keystore_file=/secrets/{{ keystore_filename }}
+      rhsm-conduit.pinhead.keystore_password=${PINHEAD_KEYSTORE_PASSWORD}
+      rhsm-conduit.pinhead.requestBatchSize=1000
+      {% else %}
+      rhsm-conduit.pinhead.useStub=true
+      {% endif %}
+
+      # rhsm-conduit job options
+      rhsm-conduit.datasource.url=jdbc:postgresql://${QUARTZ_DATABASE_SERVICE_ADDRESS:localhost}:5432/${QUARTZ_DATABASE_NAME:quartz}
+      rhsm-conduit.datasource.username=${QUARTZ_DATABASE_USER:quartz}
+      rhsm-conduit.datasource.password=${QUARTZ_DATABASE_PASSWORD:quartz}
+      rhsm-conduit.datasource.driver-class-name=org.postgresql.Driver
+      rhsm-conduit.datasource.initialize-schema=always
+      rhsm-conduit.datasource.platform=postgresql
+
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    generation: 1
+    labels:
+      app: rhsm-conduit
+    name: rhsm-conduit
+    namespace: ${NAMESPACE}
+  spec:
+    replicas: 1
+    selector:
+      deploymentconfig: rhsm-conduit
+    strategy:
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          app: rhsm-conduit
+          deploymentconfig: rhsm-conduit
+        namespace: ${NAMESPACE}
+      spec:
+        containers:
+          - image: ${IMAGE_NAMESPACE}/rhsm-conduit
+            imagePullPolicy: Always
+            name: rhsm-conduit
+            env:
+              - name: JAVA_OPTIONS
+                value: -Dlogging.config=/config/logback.xml -Dspring.config.additional-location=file:/config/rhsm-conduit.properties
+              - name: INVENTORY_API_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: rhsm-conduit
+                    key: inventory_api_key
+              - name: INVENTORY_API_HOST
+                value: ${HOST_INVENTORY_HOST}
+              - name: PINHEAD_KEYSTORE_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: rhsm-conduit
+                    key: pinhead_keystore_password
+              {% if task_queue == 'kafka'%}
+              - name: RHSM_CONDUIT_KAFKA_ADDR
+                value: ${KAFKA_BOOTSTRAP_HOST}:${KAFKA_BOOTSTRAP_PORT}
+              {% endif%}
+              {% if enable_inventory_kafka is defined and enable_inventory_kafka %}
+              - name: INVENTORY_KAFKA_ADDR
+                value: ${KAFKA_BOOTSTRAP_HOST}:${KAFKA_BOOTSTRAP_PORT}
+              {% endif %}
+              - name: QUARTZ_DATABASE_SERVICE_ADDRESS
+                value: rhsm-conduit-quartz-postgresql.${NAMESPACE}.svc
+              - name: QUARTZ_DATABASE_USER
+                valueFrom:
+                  secretKeyRef:
+                    name: rhsm-conduit-quartz-postgresql
+                    key: database-user
+              - name: QUARTZ_DATABASE_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: rhsm-conduit-quartz-postgresql
+                    key: database-name
+              - name: QUARTZ_DATABASE_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: rhsm-conduit-quartz-postgresql
+                    key: database-password
+              {% if cloudwatch_enabled %}
+              - name: AWS_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: cloudwatch
+                    key: CW_AWS_REGION_NAME
+              - name: AWS_ACCESS_KEY_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: cloudwatch
+                    key: CW_AWS_ACCESS_KEY_ID
+              - name: AWS_SECRET_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: cloudwatch
+                    key: CW_AWS_SECRET_ACCESS_KEY
+              {% endif %}
+            livenessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /actuator/health
+                port: 8080
+                scheme: HTTP
+              initialDelaySeconds: 45
+              periodSeconds: 20
+              successThreshold: 1
+              timeoutSeconds: 10
+            readinessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /actuator/health
+                port: 8080
+                scheme: HTTP
+              initialDelaySeconds: 45
+              periodSeconds: 20
+              successThreshold: 1
+              timeoutSeconds: 10
+            resources:
+              requests:
+                cpu: 200m
+                memory: 100Mi
+              limits:
+                cpu: 1
+                memory: 1000Mi
+            ports:
+              - containerPort: 8080
+                protocol: TCP
+              - containerPort: 8778
+                name: jolokia
+                protocol: TCP
+            volumeMounts:
+              - name: config
+                mountPath: /config
+              - name: secrets
+                mountPath: /secrets
+            workingDir: /
+        volumes:
+          - name: config
+            configMap:
+              name: rhsm-conduit-config
+          - name: secrets
+            secret:
+              secretName: rhsm-conduit
+        restartPolicy: Always
+        terminationGracePeriodSeconds: 75
+    triggers:
+      - imageChangeParams:
+          automatic: true
+          containerNames:
+            - rhsm-conduit
+          from:
+            kind: ImageStreamTag
+            name: rhsm-conduit:${IMAGE_TAG}
+            namespace: ${IMAGE_NAMESPACE}
+        type: ImageChange
+      - type: ConfigChange
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: rhsm-conduit
+    name: rhsm-conduit
+    namespace: ${NAMESPACE}
+  spec:
+    ports:
+      - port: 8080
+        protocol: TCP
+        targetPort: 8080
+    selector:
+      deploymentconfig: rhsm-conduit
