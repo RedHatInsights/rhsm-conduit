@@ -21,6 +21,8 @@
 package org.candlepin.insights;
 
 import org.jboss.resteasy.springboot.ResteasyApplicationBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -50,7 +52,10 @@ import javax.ws.rs.ext.Provider;
  */
 public class JaxrsApplicationServletInitializer implements BeanFactoryPostProcessor {
 
+    private static final Logger log = LoggerFactory.getLogger(JaxrsApplicationServletInitializer.class);
+
     public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+        log.info("POST PROCESSING BEAN FACTORY!!!");
         BeanDefinitionRegistry registry = (BeanDefinitionRegistry) beanFactory;
         ConfigurableEnvironment env = beanFactory.getBean(ConfigurableEnvironment.class);
         String[] applicationBeanNames = beanFactory.getBeanNamesForType(Application.class);
