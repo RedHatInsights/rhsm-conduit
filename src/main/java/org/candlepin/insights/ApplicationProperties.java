@@ -33,6 +33,8 @@ public class ApplicationProperties {
     private boolean prettyPrintJson = false;
     private boolean devMode = false;
     private String hawtioBasePath;
+    private String antiCsrfDomainSuffix = ".redhat.com";
+    private int antiCsrfPort = 443;
 
     public String getVersion() {
         return version;
@@ -64,5 +66,21 @@ public class ApplicationProperties {
 
     public void setHawtioBasePath(String hawtioBasePath) {
         this.hawtioBasePath = hawtioBasePath;
+    }
+
+    public String getAntiCsrfDomainSuffix() {
+        return antiCsrfDomainSuffix;
+    }
+
+    public void setAntiCsrfDomainSuffix(String antiCsrfDomainSuffix) {
+        this.antiCsrfDomainSuffix = antiCsrfDomainSuffix;
+    }
+
+    public int getAntiCsrfPort() {
+        return antiCsrfPort;
+    }
+
+    public void setAntiCsrfPort(int antiCsrfPort) {
+        this.antiCsrfPort = antiCsrfPort;
     }
 }
