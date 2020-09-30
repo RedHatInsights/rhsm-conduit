@@ -18,7 +18,7 @@
  * granted to use or replicate Red Hat trademarks that are incorporated
  * in this software or its documentation.
  */
-package org.candlepin.insights.pinhead.client;
+package org.candlepin.insights.rhsm.client;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.hamcrest.MatcherAssert.*;
@@ -42,7 +42,7 @@ import javax.net.ssl.SSLHandshakeException;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.GenericType;
 
-public class X509ApiClientFactoryTest {
+class X509ApiClientFactoryTest {
     public static final String STORE_PASSWORD = "password";
 
     private WireMockServer server;
@@ -61,7 +61,7 @@ public class X509ApiClientFactoryTest {
     }
 
     @Test
-    public void testNoCustomTruststoreRequired() throws Exception {
+    void testNoCustomTruststoreRequired() throws Exception {
         server = new WireMockServer(buildWireMockConfig());
         server.start();
         server.stubFor(stubHelloWorld());
@@ -83,7 +83,7 @@ public class X509ApiClientFactoryTest {
     }
 
     @Test
-    public void testTlsClientAuth() throws Exception {
+    void testTlsClientAuth() throws Exception {
         server = new WireMockServer(buildWireMockConfig());
         server.start();
         server.stubFor(stubHelloWorld());
@@ -103,7 +103,7 @@ public class X509ApiClientFactoryTest {
     }
 
     @Test
-    public void testTlsClientAuthFailsWithNoClientCert() throws Exception {
+    void testTlsClientAuthFailsWithNoClientCert() throws Exception {
         server = new WireMockServer(buildWireMockConfig());
         server.start();
         server.stubFor(stubHelloWorld());

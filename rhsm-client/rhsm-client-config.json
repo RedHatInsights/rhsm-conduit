@@ -1,0 +1,8 @@
+{
+  "modelPackage": "org.candlepin.insights.rhsm.client.model",
+  "apiPackage": "org.candlepin.insights.rhsm.client.resources",
+  "invokerPackage": "org.candlepin.insights.rhsm.client",
+  "groupId": "org.candlepin",
+  "artifactId": "rhsm-client",
+  "java8": true
+}

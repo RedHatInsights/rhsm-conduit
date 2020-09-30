@@ -25,9 +25,11 @@ import org.candlepin.insights.exception.MissingAccountNumberException;
 import org.candlepin.insights.inventory.ConduitFacts;
 import org.candlepin.insights.inventory.InventoryService;
 import org.candlepin.insights.inventory.client.InventoryServiceProperties;
-import org.candlepin.insights.pinhead.PinheadService;
-import org.candlepin.insights.pinhead.client.ApiException;
-import org.candlepin.insights.pinhead.client.model.Consumer;
+import org.candlepin.insights.rhsm.RhsmService;
+import org.candlepin.insights.rhsm.client.ApiException;
+import org.candlepin.insights.rhsm.client.model.Consumer;
+import org.candlepin.insights.rhsm.client.model.InstalledProducts;
+import org.candlepin.insights.rhsm.client.model.Pagination;
 import org.candlepin.insights.task.TaskManager;
 
 import com.google.common.collect.ImmutableSet;
@@ -104,7 +106,7 @@ public class InventoryController {
     public static final Set<String> IGNORED_CONSUMER_TYPES = ImmutableSet.of("candlepin", "satellite", "sam");
 
     private InventoryService inventoryService;
-    private PinheadService pinheadService;
+    private RhsmService rhsmService;
     private Validator validator;
     private InventoryServiceProperties inventoryServiceProperties;
     private TaskManager taskManager;
@@ -114,11 +116,11 @@ public class InventoryController {
     private Timer validateHostTimer;
 
     @Autowired
-    public InventoryController(InventoryService inventoryService, PinheadService pinheadService,
+    public InventoryController(InventoryService inventoryService, RhsmService rhsmService,
         Validator validator, InventoryServiceProperties inventoryServiceProperties, TaskManager taskManager,
         MeterRegistry meterRegistry) {
         this.inventoryService = inventoryService;
-        this.pinheadService = pinheadService;
+        this.rhsmService = rhsmService;
         this.validator = validator;
         this.inventoryServiceProperties = inventoryServiceProperties;
         this.taskManager = taskManager;
@@ -133,11 +135,11 @@ public class InventoryController {
     }
 
     public ConduitFacts getFactsFromConsumer(Consumer consumer) {
-        final Map<String, String> pinheadFacts = consumer.getFacts();
+        final Map<String, String> rhsmFacts = consumer.getFacts();
         ConduitFacts facts = new ConduitFacts();
         facts.setOrgId(consumer.getOrgId());
         facts.setSubscriptionManagerId(consumer.getUuid());
-        facts.setInsightsId(normalizeUuid(pinheadFacts.get(INSIGHTS_ID)));
+        facts.setInsightsId(normalizeUuid(rhsmFacts.get(INSIGHTS_ID)));
 
         if (consumer.getLastCheckin() != null) {
             facts.setLastCheckin(Date.from(consumer.getLastCheckin().toInstant()));
@@ -147,25 +149,25 @@ public class InventoryController {
         facts.setSysPurposeSla(consumer.getServiceLevel());
         facts.setSysPurposeUsage(consumer.getSysPurposeUsage());
         facts.setSysPurposeAddons(consumer.getSysPurposeAddons());
-        facts.setSysPurposeUnits(pinheadFacts.get(OCM_UNITS));
+        facts.setSysPurposeUnits(rhsmFacts.get(OCM_UNITS));
 
-        extractNetworkFacts(pinheadFacts, facts);
-        extractHardwareFacts(pinheadFacts, facts);
-        extractVirtualizationFacts(consumer, pinheadFacts, facts);
-        facts.setCloudProvider(extractCloudProvider(pinheadFacts));
+        extractNetworkFacts(rhsmFacts, facts);
+        extractHardwareFacts(rhsmFacts, facts);
+        extractVirtualizationFacts(consumer, rhsmFacts, facts);
+        facts.setCloudProvider(extractCloudProvider(rhsmFacts));
 
         List<String> productIds = consumer.getInstalledProducts().stream()
-            .map(installedProduct -> installedProduct.getProductId().toString()).collect(Collectors.toList());
+            .map(InstalledProducts::getProductId).collect(Collectors.toList());
         facts.setRhProd(productIds);
 
         return facts;
     }
 
-    private String extractCloudProvider(Map<String, String> pinheadFacts) {
-        String assetTag = pinheadFacts.getOrDefault("dmi.chassis.asset_tag", "");
-        String biosVendor = pinheadFacts.getOrDefault(DMI_BIOS_VENDOR, "");
-        String biosVersion = pinheadFacts.getOrDefault(DMI_BIOS_VERSION, "");
-        String systemManufacturer = pinheadFacts.getOrDefault("dmi.system.manufacturer", "");
+    private String extractCloudProvider(Map<String, String> rhsmFacts) {
+        String assetTag = rhsmFacts.getOrDefault("dmi.chassis.asset_tag", "");
+        String biosVendor = rhsmFacts.getOrDefault(DMI_BIOS_VENDOR, "");
+        String biosVersion = rhsmFacts.getOrDefault(DMI_BIOS_VERSION, "");
+        String systemManufacturer = rhsmFacts.getOrDefault("dmi.system.manufacturer", "");
         if (assetTag.equals("7783-7084-3265-9085-8269-3286-77")) {
             return "azure";
         }
@@ -201,8 +203,8 @@ public class InventoryController {
         }
     }
 
-    private void extractHardwareFacts(Map<String, String> pinheadFacts, ConduitFacts facts) {
-        String systemUuid = pinheadFacts.get(DMI_SYSTEM_UUID);
+    private void extractHardwareFacts(Map<String, String> rhsmFacts, ConduitFacts facts) {
+        String systemUuid = rhsmFacts.get(DMI_SYSTEM_UUID);
         if (!isEmpty(systemUuid)) {
             if (systemUuid.matches(UUID_REGEX)) {
                 facts.setBiosUuid(systemUuid);
@@ -213,11 +215,11 @@ public class InventoryController {
             }
         }
 
-        facts.setBiosVersion(pinheadFacts.get(DMI_BIOS_VERSION));
-        facts.setBiosVendor(pinheadFacts.get(DMI_BIOS_VENDOR));
+        facts.setBiosVersion(rhsmFacts.get(DMI_BIOS_VERSION));
+        facts.setBiosVendor(rhsmFacts.get(DMI_BIOS_VENDOR));
 
-        String cpuSockets = pinheadFacts.get(CPU_SOCKETS);
-        String coresPerSocket = pinheadFacts.get(CPU_CORES_PER_SOCKET);
+        String cpuSockets = rhsmFacts.get(CPU_SOCKETS);
+        String coresPerSocket = rhsmFacts.get(CPU_CORES_PER_SOCKET);
         if (!isEmpty(cpuSockets)) {
             Integer numCpuSockets = Integer.parseInt(cpuSockets);
             facts.setCpuSockets(numCpuSockets);
@@ -230,7 +232,7 @@ public class InventoryController {
             facts.setCoresPerSocket(Integer.parseInt(coresPerSocket));
         }
 
-        String memoryTotal = pinheadFacts.get(MEMORY_MEMTOTAL);
+        String memoryTotal = rhsmFacts.get(MEMORY_MEMTOTAL);
         if (!isEmpty(memoryTotal)) {
             try {
                 BigDecimal memoryBytes = memtotalFromString(memoryTotal);
@@ -245,7 +247,7 @@ public class InventoryController {
             }
         }
 
-        String architecture = pinheadFacts.get(UNAME_MACHINE);
+        String architecture = rhsmFacts.get(UNAME_MACHINE);
         if (!isEmpty(architecture)) {
             facts.setArchitecture(architecture);
         }
@@ -273,14 +275,14 @@ public class InventoryController {
     }
 
     @SuppressWarnings("indentation")
-    private void extractNetworkFacts(Map<String, String> pinheadFacts, ConduitFacts facts) {
-        String fqdn = pinheadFacts.get(NETWORK_FQDN);
+    private void extractNetworkFacts(Map<String, String> rhsmFacts, ConduitFacts facts) {
+        String fqdn = rhsmFacts.get(NETWORK_FQDN);
         if (!isEmpty(fqdn)) {
             facts.setFqdn(fqdn);
         }
 
         List<String> macAddresses = new ArrayList<>();
-        pinheadFacts.entrySet().stream()
+        rhsmFacts.entrySet().stream()
             .filter(entry -> entry.getKey().startsWith(MAC_PREFIX) && entry.getKey().endsWith(MAC_SUFFIX))
             .forEach(entry -> {
                 List<String> macs = Arrays.asList(entry.getValue().split(COMMA_REGEX));
@@ -295,13 +297,13 @@ public class InventoryController {
         if (!macAddresses.isEmpty()) {
             facts.setMacAddresses(macAddresses);
         }
-        extractIpAddresses(pinheadFacts, facts);
+        extractIpAddresses(rhsmFacts, facts);
     }
 
     @SuppressWarnings("indentation")
-    protected void extractIpAddresses(Map<String, String> pinheadFacts, ConduitFacts facts) {
+    protected void extractIpAddresses(Map<String, String> rhsmFacts, ConduitFacts facts) {
         Set<String> ipAddresses = new HashSet<>();
-        pinheadFacts.entrySet().stream()
+        rhsmFacts.entrySet().stream()
             .filter(entry ->
                 entry.getKey().matches(IP_ADDRESS_FACT_REGEX) && !isEmpty(entry.getValue()))
             .forEach(entry -> {
@@ -319,10 +321,10 @@ public class InventoryController {
 
     }
 
-    private void extractVirtualizationFacts(Consumer consumer, Map<String, String> pinheadFacts,
+    private void extractVirtualizationFacts(Consumer consumer, Map<String, String> rhsmFacts,
         ConduitFacts facts) {
 
-        String isGuest = pinheadFacts.get(VIRT_IS_GUEST);
+        String isGuest = rhsmFacts.get(VIRT_IS_GUEST);
         if (!isEmpty(isGuest) && !isGuest.equalsIgnoreCase(UNKNOWN)) {
             facts.setIsVirtual(isGuest.equalsIgnoreCase(TRUE));
         }
@@ -351,8 +353,8 @@ public class InventoryController {
     public void updateInventoryForOrg(String orgId, String offset)
         throws ApiException, MissingAccountNumberException {
 
-        org.candlepin.insights.pinhead.client.model.OrgInventory feedPage = pinheadService.getPageOfConsumers(
-            orgId, offset, pinheadService.formattedTime()
+        org.candlepin.insights.rhsm.client.model.OrgInventory feedPage = rhsmService.getPageOfConsumers(
+            orgId, offset, rhsmService.formattedTime()
         );
         Stream<ConduitFacts> facts = validateConduitFactsForOrg(feedPage);
 
@@ -384,40 +386,37 @@ public class InventoryController {
     }
 
     private Optional<String> getNextOffset(
-        org.candlepin.insights.pinhead.client.model.OrgInventory feedPage
+        org.candlepin.insights.rhsm.client.model.OrgInventory feedPage
     ) {
-        if (feedPage == null ||
-            feedPage.getStatus() == null ||
-            feedPage.getStatus().getPagination() == null ||
-            feedPage.getStatus().getPagination().getNextOffset() == null ||
-            feedPage.getStatus().getPagination().getNextOffset().isEmpty()) {
-            return Optional.empty();
+        Pagination pagination = feedPage.getPagination();
+        if (pagination != null && pagination.getLimit().equals(pagination.getCount())) {
+            return Optional.of(feedPage.getBody().get(pagination.getCount().intValue() - 1).getId());
         }
-        return Optional.of(feedPage.getStatus().getPagination().getNextOffset());
+        return Optional.empty();
     }
 
     public OrgInventory getInventoryForOrg(String orgId, String offset) throws MissingAccountNumberException,
         ApiException {
 
-        org.candlepin.insights.pinhead.client.model.OrgInventory feedPage = pinheadService
-            .getPageOfConsumers(orgId, offset, pinheadService.formattedTime());
+        org.candlepin.insights.rhsm.client.model.OrgInventory feedPage = rhsmService
+            .getPageOfConsumers(orgId, offset, rhsmService.formattedTime());
         return inventoryService.getInventoryForOrgConsumers(
             validateConduitFactsForOrg(feedPage).collect(Collectors.toList())
         );
     }
 
     private Stream<ConduitFacts> validateConduitFactsForOrg(
-        org.candlepin.insights.pinhead.client.model.OrgInventory feedPage)
+        org.candlepin.insights.rhsm.client.model.OrgInventory feedPage)
         throws MissingAccountNumberException {
 
-        if (feedPage.getFeeds().isEmpty()) {
+        if (feedPage.getBody().isEmpty()) {
             return Stream.empty();
         }
 
         // Peek at the first consumer.  If it is missing an account number, that means they all are.  Abort
         // and return an empty stream.  No sense in wasting time looping through everything.
         try {
-            if (StringUtils.isEmpty(feedPage.getFeeds().get(0).getAccountNumber())) {
+            if (StringUtils.isEmpty(feedPage.getBody().get(0).getAccountNumber())) {
                 throw new MissingAccountNumberException();
             }
         }
@@ -425,7 +424,7 @@ public class InventoryController {
             throw new MissingAccountNumberException();
         }
 
-        return feedPage.getFeeds().stream()
+        return feedPage.getBody().stream()
             .map(this::validateConsumer)
             .filter(Optional::isPresent)
             .map(Optional::get);

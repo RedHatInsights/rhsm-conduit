@@ -25,7 +25,7 @@ package org.candlepin.insights.exception;
  *
  * RHSMCONDUIT1XXX: General rhsm-conduit application error code space.
  * RHSMCONDUIT2XXX: Insights Inventory API related application error code space.
- * RHSMCONDUIT3XXX: Pinhead API related application error code space.
+ * RHSMCONDUIT3XXX: RHSM API related application error code space.
  *
  */
 public enum ErrorCode {
@@ -68,23 +68,23 @@ public enum ErrorCode {
     INVENTORY_SERVICE_REQUEST_ERROR(2002, "Inventory API Error"),
 
     /**
-     * An unexpected exception was thrown by the Pinhead service client.
+     * An unexpected exception was thrown by the RHSM service client.
      */
-    PINHEAD_SERVICE_ERROR(3000, "Pinhead Service Error"),
+    RHSM_SERVICE_ERROR(3000, "RHSM Service Error"),
 
     /**
-     * The pinhead service is unavailable. This typically means that the
-     * pinhead service is either down, or the configured service URL is
+     * The RHSM service is unavailable. This typically means that the
+     * RHSM service is either down, or the configured service URL is
      * not correct, and a connection can not be made.
      */
-    PINHEAD_SERVICE_UNAVAILABLE(3001, "The inventory service is unavailable"),
+    RHSM_SERVICE_UNAVAILABLE(3001, "The RHSM service is unavailable"),
 
     /**
-     * An exception was thrown by the pinhead service when a request was made.
+     * An exception was thrown by the RHSM service when a request was made.
      * This typically means that an HTTP client error has occurred (HTTP 4XX)
      * when rhsm-conduit made the request.
      */
-    PINHEAD_SERVICE_REQUEST_ERROR(3002, "Inventory API Error");
+    RHSM_SERVICE_REQUEST_ERROR(3002, "RHSM API Error");
 
 
 

@@ -158,7 +158,7 @@ dependencies {
 
     compile project(":api")
     compile project(":insights-inventory-client")
-    compile project(":pinhead-client")
+    compile project(":rhsm-client")
     compile project(":kafka-schema")
 
     // This starter pulls in Spring Boot versions that we don't want.  The actual classes that we need are
@@ -311,12 +311,12 @@ project(":insights-inventory-client") {
     }
 }
 
-project(":pinhead-client") {
+project(":rhsm-client") {
     apply plugin: "org.openapi.generator"
 
     ext {
-        api_spec_path = "${projectDir}/pinhead-client-spec.yaml"
-        config_file = "${projectDir}/pinhead-client-config.json"
+        api_spec_path = "${projectDir}/rhsm-client-spec.yaml"
+        config_file = "${projectDir}/rhsm-client-config.json"
     }
 
     dependencies {
@@ -324,7 +324,7 @@ project(":pinhead-client") {
     }
 }
 
-configure(subprojects.findAll { it.name == 'insights-inventory-client' || it.name == 'pinhead-client'}) {
+configure(subprojects.findAll { it.name == 'insights-inventory-client' || it.name == 'rhsm-client'}) {
     apply plugin: "org.openapi.generator"
     apply plugin: "checkstyle"
 

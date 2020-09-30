@@ -18,7 +18,7 @@
  * granted to use or replicate Red Hat trademarks that are incorporated
  * in this software or its documentation.
  */
-package org.candlepin.insights.pinhead.client;
+package org.candlepin.insights.rhsm.client;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.hamcrest.CoreMatchers.*;
@@ -41,11 +41,11 @@ import javax.net.ssl.SSLHandshakeException;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.GenericType;
 
-public class PinheadApiFactoryTest {
+class RhsmApiFactoryTest {
     public static final String STORE_PASSWORD = "password";
 
     private WireMockServer server;
-    private PinheadApiProperties config;
+    private RhsmApiProperties config;
     private X509ApiClientFactory x509Factory;
 
     private MappingBuilder stubHelloWorld() {
@@ -63,24 +63,24 @@ public class PinheadApiFactoryTest {
 
     @BeforeEach
     private void setUp() {
-        config = new PinheadApiProperties();
+        config = new RhsmApiProperties();
     }
 
     @Test
-    public void testStubClientConfiguration() throws Exception {
+    void testStubClientConfiguration() throws Exception {
         config.setUseStub(true);
-        PinheadApiFactory factory = new PinheadApiFactory(config);
-        assertEquals(StubPinheadApi.class, factory.getObject().getClass());
+        RhsmApiFactory factory = new RhsmApiFactory(config);
+        assertEquals(StubRhsmApi.class, factory.getObject().getClass());
     }
 
     @Test
-    public void testNoAuthClientConfiguration() throws Exception {
-        PinheadApiFactory factory = new PinheadApiFactory(config);
+    void testNoAuthClientConfiguration() throws Exception {
+        RhsmApiFactory factory = new RhsmApiFactory(config);
         assertEquals(null, factory.getObject().getApiClient().getHttpClient().getSslContext());
     }
 
     @Test
-    public void testTlsClientAuth() throws Exception {
+    void testTlsClientAuth() throws Exception {
         server = new WireMockServer(buildWireMockConfig());
         server.start();
         server.stubFor(stubHelloWorld());
@@ -91,7 +91,7 @@ public class PinheadApiFactoryTest {
         config.setTruststoreFile(Resources.getResource("test-ca.jks").getPath());
         config.setTruststorePassword(STORE_PASSWORD);
 
-        PinheadApiFactory factory = new PinheadApiFactory(config);
+        RhsmApiFactory factory = new RhsmApiFactory(config);
         ApiClient client = factory.getObject().getApiClient();
 
         client.setBasePath(server.baseUrl());
@@ -99,7 +99,7 @@ public class PinheadApiFactoryTest {
     }
 
     @Test
-    public void testTlsClientAuthFailsWithNoClientCert() throws Exception {
+    void testTlsClientAuthFailsWithNoClientCert() throws Exception {
         server = new WireMockServer(buildWireMockConfig());
         server.start();
         server.stubFor(stubHelloWorld());
@@ -107,7 +107,7 @@ public class PinheadApiFactoryTest {
         config.setTruststoreFile(Resources.getResource("test-ca.jks").getPath());
         config.setTruststorePassword(STORE_PASSWORD);
 
-        PinheadApiFactory factory = new PinheadApiFactory(config);
+        RhsmApiFactory factory = new RhsmApiFactory(config);
         ApiClient client = factory.getObject().getApiClient();
 
         client.setBasePath(server.baseUrl());
