@@ -23,3 +23,6 @@ management:
       enabled: true
     prometheus:
       enabled: true
+    jolokia:
+      config:
+        restrictorClass: org.candlepin.insights.security.JolokiaRestrictor
