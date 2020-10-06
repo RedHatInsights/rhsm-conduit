@@ -18,17 +18,16 @@
  * granted to use or replicate Red Hat trademarks that are incorporated
  * in this software or its documentation.
  */
-package org.candlepin.insights.pinhead;
+package org.candlepin.insights.rhsm;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import org.candlepin.insights.inventory.client.InventoryServiceProperties;
-import org.candlepin.insights.pinhead.client.ApiException;
-import org.candlepin.insights.pinhead.client.PinheadApiProperties;
-import org.candlepin.insights.pinhead.client.model.Consumer;
-import org.candlepin.insights.pinhead.client.model.OrgInventory;
-import org.candlepin.insights.pinhead.client.resources.PinheadApi;
+import org.candlepin.insights.rhsm.client.ApiException;
+import org.candlepin.insights.rhsm.client.RhsmApiProperties;
+import org.candlepin.insights.rhsm.client.model.OrgInventory;
+import org.candlepin.insights.rhsm.client.resources.RhsmApi;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,31 +40,28 @@ import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.test.context.TestPropertySource;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import javax.validation.ConstraintViolationException;
 
 @SpringBootTest
 @TestPropertySource("classpath:/test.properties")
-public class PinheadServiceTest {
+class RhsmServiceTest {
     @Autowired
     private RetryTemplate retryTemplate;
 
     @Autowired
-    private PinheadService pinheadService;
+    private RhsmService rhsmService;
 
     @Autowired
     private InventoryServiceProperties inventoryServiceProperties;
 
     @MockBean
-    private PinheadApi pinheadApi;
+    private RhsmApi rhsmApi;
 
     @TestConfiguration
     static class MockedInventoryServiceConfiguration {
         @Bean
         @Primary
-        public InventoryServiceProperties testingInventoryServiceProperties() {
+        InventoryServiceProperties testingInventoryServiceProperties() {
             InventoryServiceProperties inventoryServiceProperties = new InventoryServiceProperties();
             inventoryServiceProperties.setApiKey("changeit");
             return inventoryServiceProperties;
@@ -73,48 +69,46 @@ public class PinheadServiceTest {
     }
 
     @Test
-    public void testPinheadServiceRetry() throws Exception {
-        when(pinheadApi.getConsumersForOrg(
+    void testRhsmServiceRetry() throws Exception {
+        when(rhsmApi.getConsumersForOrg(
             anyString(), any(Integer.class), nullable(String.class), anyString()
         )).thenThrow(ApiException.class);
 
         // Make the tests run faster!
         retryTemplate.setBackOffPolicy(new NoBackOffPolicy());
-        PinheadService mockBackedService = new PinheadService(inventoryServiceProperties,
-            new PinheadApiProperties(), pinheadApi, retryTemplate);
+        RhsmService mockBackedService = new RhsmService(inventoryServiceProperties,
+            new RhsmApiProperties(), rhsmApi, retryTemplate);
 
-        List<Consumer> consumers = new ArrayList<>();
         assertThrows(ApiException.class, () ->
-            consumers.addAll(mockBackedService.getPageOfConsumers("123",
-            null, mockBackedService.formattedTime()).getFeeds())
+            mockBackedService.getPageOfConsumers("123", null, mockBackedService.formattedTime())
         );
 
-        verify(pinheadApi, times(4)).getConsumersForOrg(anyString(), any(Integer.class),
+        verify(rhsmApi, times(4)).getConsumersForOrg(anyString(), any(Integer.class),
             nullable(String.class), anyString());
     }
 
     @Test
-    public void testPinheadServiceLastCheckInValidationBad() throws Exception {
+    void testRhsmServiceLastCheckInValidationBad() throws Exception {
         assertThrows(ConstraintViolationException.class,
-            () -> pinheadService.getPageOfConsumers("", "", "Does Not Validate")
+            () -> rhsmService.getPageOfConsumers("", "", "Does Not Validate")
         );
     }
 
     @Test
-    public void testPinheadServiceLastCheckInValidationBadWithNanos() throws Exception {
+    void testRhsmServiceLastCheckInValidationBadWithNanos() throws Exception {
         String time = "2020-01-01T13:00:00.725Z";
         assertThrows(ConstraintViolationException.class,
-            () -> pinheadService.getPageOfConsumers("org", "offset", time)
+            () -> rhsmService.getPageOfConsumers("org", "offset", time)
         );
     }
 
     @Test
-    public void testPinheadServiceLastCheckInValidationGood() throws Exception {
+    void testRhsmServiceLastCheckInValidationGood() throws Exception {
         String time = "2020-01-01T13:00:00Z";
         OrgInventory expected = new OrgInventory();
-        when(pinheadApi.getConsumersForOrg(eq("org"), anyInt(), eq("offset"), eq(time))).thenReturn(expected);
+        when(rhsmApi.getConsumersForOrg(eq("org"), anyInt(), eq("offset"), eq(time))).thenReturn(expected);
 
-        OrgInventory actual = pinheadService.getPageOfConsumers("org", "offset", time);
+        OrgInventory actual = rhsmService.getPageOfConsumers("org", "offset", time);
         assertSame(expected, actual);
     }
 }

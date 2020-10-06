@@ -22,7 +22,7 @@ package org.candlepin.insights.resource;
 
 import org.candlepin.insights.controller.InventoryController;
 import org.candlepin.insights.exception.MissingAccountNumberException;
-import org.candlepin.insights.pinhead.client.ApiException;
+import org.candlepin.insights.rhsm.client.ApiException;
 import org.candlepin.insights.task.TaskManager;
 
 import org.junit.jupiter.api.Test;

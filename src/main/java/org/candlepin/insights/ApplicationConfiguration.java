@@ -21,8 +21,8 @@
 package org.candlepin.insights;
 
 import org.candlepin.insights.jackson.ObjectMapperContextResolver;
-import org.candlepin.insights.pinhead.client.PinheadApiFactory;
-import org.candlepin.insights.pinhead.client.PinheadApiProperties;
+import org.candlepin.insights.rhsm.client.RhsmApiFactory;
+import org.candlepin.insights.rhsm.client.RhsmApiProperties;
 
 import org.jboss.resteasy.springboot.ResteasyAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,8 +84,8 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
     }
 
     /**
-     * Load values from the application properties file prefixed with "rhsm-conduit.pinhead".  For example,
-     * "rhsm-conduit.pinhead.keystore-password=password" will be injected into the keystorePassword field.
+     * Load values from the application properties file prefixed with "rhsm-conduit.rhsm".  For example,
+     * "rhsm-conduit.rhsm.keystore-password=password" will be injected into the keystorePassword field.
      * The hyphen is not necessary but it improves readability.  Rather than use the
      * ConfigurationProperties annotation on the class itself and the EnableConfigurationProperties
      * annotation on ApplicationConfiguration, we construct and bind values to the class here so that our
@@ -94,20 +94,20 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
      * @return an X509ApiClientFactoryConfiguration populated with values from the various property sources.
      */
     @Bean
-    @ConfigurationProperties(prefix = "rhsm-conduit.pinhead")
-    public PinheadApiProperties pinheadApiProperties() {
-        return new PinheadApiProperties();
+    @ConfigurationProperties(prefix = "rhsm-conduit.rhsm")
+    public RhsmApiProperties rhsmApiProperties() {
+        return new RhsmApiProperties();
     }
 
     /**
      * Build the BeanFactory implementation ourselves since the docs say "Implementations are not supposed
      * to rely on annotation-driven injection or other reflective facilities."
      * @param properties containing the configuration needed by the factory
-     * @return a configured PinheadApiFactory
+     * @return a configured RhsmApiFactory
      */
     @Bean
-    public PinheadApiFactory pinheadApiFactory(PinheadApiProperties properties) {
-        return new PinheadApiFactory(properties);
+    public RhsmApiFactory rhsmApiFactory(RhsmApiProperties properties) {
+        return new RhsmApiFactory(properties);
     }
 
     /**
@@ -135,7 +135,7 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
         return new JaxrsApplicationServletInitializer();
     }
 
-    @Bean(name = "pinheadRetryTemplate")
+    @Bean(name = "rhsmRetryTemplate")
     public RetryTemplate retryTemplate() {
         SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
         retryPolicy.setMaxAttempts(4);
