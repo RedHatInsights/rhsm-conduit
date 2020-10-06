@@ -42,6 +42,8 @@ import java.util.stream.Collectors;
  */
 @Component
 @ManagedResource
+// must log, then throw because the exception is passed to client and not logged.
+@SuppressWarnings("java:S2139")
 public class RhsmConduitJmxBean {
 
     private static final Logger log = LoggerFactory.getLogger(RhsmConduitJmxBean.class);
@@ -60,50 +62,70 @@ public class RhsmConduitJmxBean {
     }
 
     @ManagedOperation(description = "Trigger a sync for a given Org ID")
-    public void syncOrg(String orgId) {
-        log.info("Starting JMX-initiated sync for org ID {}", orgId);
+    public void syncOrg(String orgId) throws RhsmJmxException {
         try {
+            log.info("Starting JMX-initiated sync for org ID {}", orgId);
             controller.updateInventoryForOrg(orgId);
         }
         catch (Exception e) {
             log.error("Error during JMX-initiated sync for org ID {}", orgId, e);
+            throw new RhsmJmxException(e);
         }
     }
 
     @ManagedOperation(description = "Sync all orgs from the configured org list")
-    public void syncFullOrgList() {
+    public void syncFullOrgList() throws RhsmJmxException {
         log.info("Starting JMX-initiated sync for all configured orgs");
         try {
             tasks.syncFullOrgList();
         }
         catch (Exception e) {
             log.error("Error during JMX-initiated sync for full org list", e);
+            throw new RhsmJmxException(e);
         }
     }
 
     @ManagedOperation(description = "Add some orgs to the database sync list")
     @ManagedOperationParameter(name = "orgs", description = "comma-separated org list (whitespace ignored)")
-    public void addOrgsToSyncList(String orgs) {
-        List<OrgConfig> orgList = extractOrgList(orgs);
+    public void addOrgsToSyncList(String orgs) throws RhsmJmxException {
+        try {
+            List<OrgConfig> orgList = extractOrgList(orgs);
 
-        log.info("Adding {} orgs to DB sync list", orgList.size());
+            log.info("Adding {} orgs to DB sync list via JMX", orgList.size());
 
-        repo.saveAll(orgList);
+            repo.saveAll(orgList);
+        }
+        catch (Exception e) {
+            log.error("Error while adding orgs to DB sync list via JMX", e);
+            throw new RhsmJmxException(e);
+        }
     }
 
     @ManagedOperation(description = "Remove some orgs from the database sync list")
     @ManagedOperationParameter(name = "orgs", description = "comma-separated org list (whitespace ignored)")
-    public void removeOrgsFromSyncList(String orgs) {
-        List<OrgConfig> orgList = extractOrgList(orgs);
+    public void removeOrgsFromSyncList(String orgs) throws RhsmJmxException {
+        try {
+            List<OrgConfig> orgList = extractOrgList(orgs);
 
-        log.info("Removing {} orgs from DB sync list", orgList.size());
+            log.info("Removing {} orgs from DB sync list via JMX", orgList.size());
 
-        repo.deleteAll(orgList);
+            repo.deleteAll(orgList);
+        }
+        catch (Exception e) {
+            log.error("Error removing orgs from DB sync list via JMX", e);
+            throw new RhsmJmxException(e);
+        }
     }
 
     @ManagedOperation(description = "Check if an org is present in the database sync list")
-    public boolean hasOrgInSyncList(String orgId) {
-        return repo.existsById(orgId);
+    public boolean hasOrgInSyncList(String orgId) throws RhsmJmxException {
+        try {
+            return repo.existsById(orgId);
+        }
+        catch (Exception e) {
+            log.error("Unable to determine if org {} exists via JMX", orgId);
+            throw new RhsmJmxException(e);
+        }
     }
 
     private List<OrgConfig> extractOrgList(String orgs) {
