@@ -183,6 +183,8 @@ for a discussion of extension points.
 * `RHSM_URL`: RHSM service URL
 * `RHSM_KEYSTORE`: path to keystore with client cert
 * `RHSM_KEYSTORE_PASSWORD`: RHSM API client cert keystore password
+* `RHSM_TRUSTSTORE`: path to truststore for verification of RHSM endpoint
+* `RHSM_KEYSTORE_PASSWORD`: truststore password
 * `RHSM_BATCH_SIZE`: host sync batch size
 * `RHSM_MAX_CONNECTIONS`: maximum concurrent connections to RHSM API
 * `INVENTORY_USE_STUB`: Use stubbed inventory REST API

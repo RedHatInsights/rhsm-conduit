@@ -136,6 +136,13 @@ objects:
                     key: keystore_password
               - name: RHSM_KEYSTORE
                 value: /pinhead/keystore.jks
+              - name: RHSM_TRUSTSTORE_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: tls
+                    key: keystore_password
+              - name: RHSM_TRUSTSTORE
+                value: /pinhead/truststore.jks
             livenessProbe:
               failureThreshold: 3
               httpGet:
