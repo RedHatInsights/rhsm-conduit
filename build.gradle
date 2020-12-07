@@ -16,7 +16,7 @@ plugins {
     id "jacoco"
     id "org.sonarqube" version "2.8"
     id "org.springframework.boot" version "2.0.8.RELEASE"
-    id "net.researchgate.release" version "2.6.0"
+    id "net.researchgate.release" version "2.8.1"
     id "GitProperties"
     // Only applied for the rhsm-conduit-kafka sub project; applied below.
     id "com.commercehub.gradle.plugin.avro-base" version "0.9.1" apply false
@@ -147,8 +147,9 @@ release {
     preTagCommitMessage = '[RHSM Conduit Release] - pre tag commit: '
     tagCommitMessage = '[RHSM Conduit Release] - creating tag: '
     newVersionCommitMessage = '[RHSM Conduit Release] - version bump: '
+    pushReleaseVersionBranch = 'main'
     git {
-        requireBranch = /master|stable/
+        requireBranch = /develop|hotfix.*/
         pushToRemote = false
     }
 }
