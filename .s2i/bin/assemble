@@ -1,3 +1,0 @@
-cd /tmp/src
-./gradlew assemble
-cp build/libs/* /deployments/
